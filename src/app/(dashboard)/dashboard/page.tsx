@@ -81,20 +81,25 @@ export default function DashboardPage() {
 
     try {
       // Ensure user and family exist before creating child
+      console.log("Step 1: Calling ensureUser...");
       await ensureUser();
+      console.log("Step 2: ensureUser completed, creating child...");
 
       await createChild({
         name: newChildName.trim(),
         avatar: selectedAvatar,
         theme: "#22d1c6",
       });
+      console.log("Step 3: Child created successfully");
 
       setNewChildName("");
       setSelectedAvatar("😊");
       setShowAddChild(false);
-    } catch (err) {
-      console.error("Error creating child:", err);
-      setError("לא הצלחנו להוסיף את הילד. נסה שוב.");
+    } catch (err: unknown) {
+      console.error("Error details:", err);
+      // Show actual error message to help debug
+      const message = err instanceof Error ? err.message : String(err);
+      setError(`שגיאה: ${message}`);
     } finally {
       setIsCreating(false);
     }

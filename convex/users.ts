@@ -96,13 +96,20 @@ export const ensureUser = mutation({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new Error("Not authenticated - please sign in");
     }
+
+    // Extract user info from identity (handle various property names)
+    const clerkId = identity.subject;
+    const email = identity.email || identity.emailAddress || `${clerkId}@temp.local`;
+    const name = identity.name || identity.givenName || undefined;
+    // Clerk uses pictureUrl in Convex identity
+    const imageUrl = identity.pictureUrl || undefined;
 
     // Check if user already exists
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
       .unique();
 
     if (existingUser) {
@@ -133,16 +140,16 @@ export const ensureUser = mutation({
 
     // Create new user
     const userId = await ctx.db.insert("users", {
-      clerkId: identity.subject,
-      email: identity.email || "",
-      name: identity.name,
-      imageUrl: identity.pictureUrl,
+      clerkId,
+      email,
+      name,
+      imageUrl,
       createdAt: Date.now(),
     });
 
     // Create a default family for the user
     const familyId = await ctx.db.insert("families", {
-      name: identity.name ? `משפחת ${identity.name.split(" ")[0]}` : "המשפחה שלי",
+      name: name ? `משפחת ${name.split(" ")[0]}` : "המשפחה שלי",
       ownerId: userId,
       createdAt: Date.now(),
     });
