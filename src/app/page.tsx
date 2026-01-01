@@ -18,10 +18,24 @@ export default async function HomePage() {
           <h1 className="text-6xl font-bold text-white mb-6 drop-shadow-lg">
             משימות ילדים 🌟
           </h1>
-          <p className="text-2xl text-white/90 mb-8 max-w-2xl mx-auto">
-            הפוך את המשימות היומיות למשחק מהנה! הילדים צוברים נקודות, פותחים
-            הישגים ומרוויחים פרסים
-          </p>
+          <div className="text-xl text-white/90 mb-8 max-w-3xl mx-auto space-y-4">
+            <p className="text-2xl">
+              <span className="font-bold">לילדים:</span> משחק מהנה עם נקודות, רמות והישגים
+            </p>
+            <p className="text-2xl">
+              <span className="font-bold">להורים:</span> שגרה רגועה בלי מאבקים
+            </p>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mt-6">
+              <p className="font-bold text-xl mb-3">📚 להתפתחות הילד - מחקרים מוכיחים:</p>
+              <p className="text-white/80 text-lg">ילדים שעושים מטלות בבית מפתחים:</p>
+              <div className="grid grid-cols-2 gap-2 mt-3 text-right">
+                <div>✅ תחושת מסוגלות וביטחון עצמי</div>
+                <div>✅ אחריות ועצמאות</div>
+                <div>✅ יכולת ריכוז וזיכרון טובים יותר</div>
+                <div>✅ אמפתיה ומיומנויות חברתיות</div>
+              </div>
+            </div>
+          </div>
 
           <div className="flex gap-4 justify-center flex-wrap">
             <Link
