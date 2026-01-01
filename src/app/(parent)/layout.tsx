@@ -1,9 +1,15 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { APP_VERSION } from "../../lib/version";
+import { PinModal } from "../../components/pin/PinModal";
+
+const PIN_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const ACTIVITY_CHECK_INTERVAL = 60 * 1000; // Check every minute
 
 export default function ParentLayout({
   children,
@@ -11,14 +17,121 @@ export default function ParentLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const hasPin = useQuery(api.families.hasParentPin);
+
+  const [isVerified, setIsVerified] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  // Check if session is still valid (within 15 min timeout)
+  const checkSession = useCallback(() => {
+    const lastActivity = localStorage.getItem("parentModeLastActivity");
+    if (!lastActivity) return false;
+
+    const elapsed = Date.now() - parseInt(lastActivity, 10);
+    return elapsed < PIN_TIMEOUT_MS;
+  }, []);
+
+  // Update activity timestamp
+  const updateActivity = useCallback(() => {
+    localStorage.setItem("parentModeLastActivity", Date.now().toString());
+  }, []);
+
+  // Initial session check
+  useEffect(() => {
+    if (hasPin === undefined) return; // Still loading
+
+    if (hasPin === false) {
+      // No PIN set, need to set one
+      setShowPinModal(true);
+      setIsVerified(false);
+    } else if (checkSession()) {
+      // Session still valid
+      setIsVerified(true);
+      updateActivity();
+    } else {
+      // Need to verify PIN
+      setShowPinModal(true);
+      setIsVerified(false);
+    }
+    setIsCheckingSession(false);
+  }, [hasPin, checkSession, updateActivity]);
+
+  // Activity tracking - update on user interaction
+  useEffect(() => {
+    if (!isVerified) return;
+
+    const handleActivity = () => updateActivity();
+
+    window.addEventListener("click", handleActivity);
+    window.addEventListener("keydown", handleActivity);
+    window.addEventListener("scroll", handleActivity);
+    window.addEventListener("touchstart", handleActivity);
+
+    return () => {
+      window.removeEventListener("click", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      window.removeEventListener("scroll", handleActivity);
+      window.removeEventListener("touchstart", handleActivity);
+    };
+  }, [isVerified, updateActivity]);
+
+  // Periodic timeout check
+  useEffect(() => {
+    if (!isVerified) return;
+
+    const interval = setInterval(() => {
+      if (!checkSession()) {
+        setIsVerified(false);
+        setShowPinModal(true);
+      }
+    }, ACTIVITY_CHECK_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [isVerified, checkSession]);
+
+  const handlePinSuccess = () => {
+    updateActivity();
+    setIsVerified(true);
+    setShowPinModal(false);
+  };
+
+  const handleCancel = () => {
+    // Redirect back to dashboard if they cancel
+    window.location.href = "/dashboard";
+  };
 
   const navItems = [
     { href: "/parent", label: "סקירה כללית", icon: "dashboard" },
     { href: "/parent/children", label: "ניהול ילדים", icon: "people" },
+    { href: "/parent/tasks", label: "ניהול משימות", icon: "task_alt" },
     { href: "/parent/reduce-points", label: "הורדת נקודות", icon: "remove_circle" },
     { href: "/parent/rewards", label: "ניהול פרסים", icon: "card_giftcard" },
     { href: "/parent/reports", label: "דוחות", icon: "analytics" },
+    { href: "/parent/settings", label: "הגדרות", icon: "settings" },
   ];
+
+  // Show loading while checking session
+  if (isCheckingSession || hasPin === undefined) {
+    return (
+      <div className="min-h-screen bg-[#f0f0f5] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a29bfe]"></div>
+      </div>
+    );
+  }
+
+  // Show PIN modal if not verified
+  if (showPinModal) {
+    return (
+      <div className="min-h-screen bg-[#f0f0f5]">
+        <PinModal
+          mode={hasPin ? "verify" : "setup"}
+          onSuccess={handlePinSuccess}
+          onCancel={handleCancel}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f0f0f5]">
@@ -39,13 +152,6 @@ export default function ParentLayout({
               <span className="material-symbols-outlined text-sm">arrow_back</span>
               חזרה למסך ילדים
             </Link>
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "w-10 h-10 border-2 border-white",
-                },
-              }}
-            />
           </div>
         </div>
 

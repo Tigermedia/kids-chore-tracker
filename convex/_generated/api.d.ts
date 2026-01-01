@@ -10,6 +10,7 @@
 
 import type * as achievements from "../achievements.js";
 import type * as children from "../children.js";
+import type * as families from "../families.js";
 import type * as notifications from "../notifications.js";
 import type * as pointReductions from "../pointReductions.js";
 import type * as rewards from "../rewards.js";
@@ -25,6 +26,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   achievements: typeof achievements;
   children: typeof children;
+  families: typeof families;
   notifications: typeof notifications;
   pointReductions: typeof pointReductions;
   rewards: typeof rewards;

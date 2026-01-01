@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 
@@ -35,75 +36,23 @@ function getNextLevelXP(xp: number) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const children = useQuery(api.children.listByFamily);
   const [selectedChildId, setSelectedChildId] = useState<Id<"children"> | null>(
     null
   );
-  const [showAddChild, setShowAddChild] = useState(false);
-  const [newChildName, setNewChildName] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState("😊");
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const createChild = useMutation(api.children.createChild);
-  const ensureUser = useMutation(api.users.ensureUser);
-
-  const avatars = [
-    // פרצופים
-    "😊", "😎", "🤓", "😁", "🥳",
-    // גיבורי על
-    "🦸", "🦸‍♂️", "🦸‍♀️", "🦹", "🦹‍♂️", "🦹‍♀️", "🥷",
-    // חיות
-    "🦄", "🐴", "🐶", "🐱", "🦁", "🐻", "🐼", "🦊", "🐸", "🦋", "🐯", "🐰", "🐨",
-    // אחר
-    "🌟", "🚀", "⭐", "🎈", "🎨", "🎮", "👸", "🤴", "🧙", "🧚",
-  ];
-
-  const themes = [
-    { color: "#22d1c6", name: "טורקיז" },
-    { color: "#a29bfe", name: "סגול" },
-    { color: "#ff6b6b", name: "אדום" },
-    { color: "#ffd93d", name: "צהוב" },
-    { color: "#95e1d3", name: "ירוק" },
-    { color: "#dfe6e9", name: "אפור" },
-  ];
 
   const selectedChild =
     selectedChildId && children
       ? children.find((c) => c._id === selectedChildId)
       : children?.[0];
 
-  const handleAddChild = async () => {
-    if (!newChildName.trim() || isCreating) return;
-
-    setIsCreating(true);
-    setError(null);
-
-    try {
-      // Ensure user and family exist before creating child
-      console.log("Step 1: Calling ensureUser...");
-      await ensureUser();
-      console.log("Step 2: ensureUser completed, creating child...");
-
-      await createChild({
-        name: newChildName.trim(),
-        avatar: selectedAvatar,
-        theme: "#22d1c6",
-      });
-      console.log("Step 3: Child created successfully");
-
-      setNewChildName("");
-      setSelectedAvatar("😊");
-      setShowAddChild(false);
-    } catch (err: unknown) {
-      console.error("Error details:", err);
-      // Show actual error message to help debug
-      const message = err instanceof Error ? err.message : String(err);
-      setError(`שגיאה: ${message}`);
-    } finally {
-      setIsCreating(false);
+  // Redirect to parent area if no children
+  useEffect(() => {
+    if (children && children.length === 0) {
+      router.push("/parent/children");
     }
-  };
+  }, [children, router]);
 
   if (!children) {
     return (
@@ -113,59 +62,13 @@ export default function DashboardPage() {
     );
   }
 
+  // Show loading while redirecting
   if (children.length === 0) {
     return (
-      <div className="max-w-md mx-auto text-center py-12">
-        <div className="text-6xl mb-6">👶</div>
-        <h2 className="text-2xl font-bold mb-4">ברוכים הבאים!</h2>
-        <p className="text-gray-600 mb-8">
-          בואו נוסיף את הילד הראשון למשפחה
-        </p>
-
-        <div className="bg-white rounded-2xl shadow-lg p-6 text-right">
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">שם הילד</label>
-            <input
-              type="text"
-              value={newChildName}
-              onChange={(e) => setNewChildName(e.target.value)}
-              placeholder="הקלד את שם הילד..."
-              className="w-full rounded-xl border border-gray-200 p-3 focus:border-[#22d1c6] focus:outline-none"
-            />
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">בחר אווטאר</label>
-            <div className="grid grid-cols-6 gap-2">
-              {avatars.map((avatar) => (
-                <button
-                  key={avatar}
-                  onClick={() => setSelectedAvatar(avatar)}
-                  className={`text-2xl p-2 rounded-xl transition-all ${
-                    selectedAvatar === avatar
-                      ? "bg-[#22d1c6] scale-110"
-                      : "bg-gray-100 hover:bg-gray-200"
-                  }`}
-                >
-                  {avatar}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm">
-              {error}
-            </div>
-          )}
-
-          <button
-            onClick={handleAddChild}
-            disabled={!newChildName.trim() || isCreating}
-            className="w-full bg-[#22d1c6] text-white py-3 rounded-xl font-bold hover:bg-[#1db8ae] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isCreating ? "מוסיף..." : "הוסף ילד 🎉"}
-          </button>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#22d1c6] mx-auto mb-4"></div>
+          <p className="text-gray-500">מעביר למצב הורה...</p>
         </div>
       </div>
     );
@@ -202,14 +105,6 @@ export default function DashboardPage() {
             <span className="font-medium">{child.name}</span>
           </button>
         ))}
-
-        <button
-          onClick={() => setShowAddChild(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors whitespace-nowrap"
-        >
-          <span className="material-symbols-outlined">add</span>
-          הוסף ילד
-        </button>
       </div>
 
       {selectedChild && (
@@ -304,79 +199,6 @@ export default function DashboardPage() {
             </a>
           </div>
         </>
-      )}
-
-      {/* Add Child Modal */}
-      {showAddChild && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">הוסף ילד חדש</h2>
-              <button
-                onClick={() => setShowAddChild(false)}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">שם הילד</label>
-              <input
-                type="text"
-                value={newChildName}
-                onChange={(e) => setNewChildName(e.target.value)}
-                placeholder="הקלד את שם הילד..."
-                className="w-full rounded-xl border border-gray-200 p-3 focus:border-[#22d1c6] focus:outline-none"
-              />
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">בחר אווטאר</label>
-              <div className="grid grid-cols-6 gap-2">
-                {avatars.map((avatar) => (
-                  <button
-                    key={avatar}
-                    onClick={() => setSelectedAvatar(avatar)}
-                    className={`text-2xl p-2 rounded-xl transition-all ${
-                      selectedAvatar === avatar
-                        ? "bg-[#22d1c6] scale-110"
-                        : "bg-gray-100 hover:bg-gray-200"
-                    }`}
-                  >
-                    {avatar}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm">
-                {error}
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowAddChild(false);
-                  setError(null);
-                }}
-                disabled={isCreating}
-                className="flex-1 py-3 rounded-xl border border-gray-200 font-medium hover:bg-gray-50 disabled:opacity-50"
-              >
-                ביטול
-              </button>
-              <button
-                onClick={handleAddChild}
-                disabled={!newChildName.trim() || isCreating}
-                className="flex-1 bg-[#22d1c6] text-white py-3 rounded-xl font-bold hover:bg-[#1db8ae] transition-colors disabled:opacity-50"
-              >
-                {isCreating ? "מוסיף..." : "הוסף 🎉"}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

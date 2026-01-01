@@ -17,6 +17,7 @@ export default defineSchema({
   families: defineTable({
     name: v.string(),
     ownerId: v.id("users"),
+    parentPin: v.optional(v.string()), // Hashed 4-digit PIN for parent area
     createdAt: v.number(),
   }).index("by_ownerId", ["ownerId"]),
 

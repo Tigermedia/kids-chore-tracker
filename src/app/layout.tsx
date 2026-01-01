@@ -15,6 +15,15 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "משימות ילדים",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
@@ -26,6 +35,8 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl">
       <head>
+        <meta name="theme-color" content="#22d1c6" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"

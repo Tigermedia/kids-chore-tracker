@@ -55,7 +55,7 @@ export default function DashboardLayout({
     { href: "/dashboard/tasks", label: "משימות", icon: "task_alt" },
     { href: "/dashboard/shop", label: "חנות", icon: "storefront" },
     { href: "/dashboard/achievements", label: "הישגים", icon: "emoji_events" },
-    { href: "/dashboard/reports", label: "דוחות", icon: "bar_chart" },
+    { href: "/parent", label: "הורה", icon: "supervisor_account" },
   ];
 
   return (
@@ -159,8 +159,10 @@ export default function DashboardLayout({
               appearance={{
                 elements: {
                   avatarBox: "w-10 h-10",
+                  userButtonPopoverCard: "rounded-xl",
                 },
               }}
+              showName={false}
             />
           </div>
         </div>

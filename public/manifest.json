@@ -1,0 +1,32 @@
+{
+  "name": "משימות ילדים - Kids Chore Tracker",
+  "short_name": "משימות ילדים",
+  "description": "אפליקציה אינטראקטיבית למעקב אחר משימות ילדים עם נקודות ופרסים",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f0f0f5",
+  "theme_color": "#22d1c6",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "he",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

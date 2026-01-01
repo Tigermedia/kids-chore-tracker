@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import { Confetti } from "../../../../components/celebration/Confetti";
 
 export default function TasksPage() {
   const children = useQuery(api.children.listByFamily);
   const [selectedChildId, setSelectedChildId] = useState<Id<"children"> | null>(
     null
   );
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const selectedChild =
     selectedChildId && children
@@ -36,6 +38,8 @@ export default function TasksPage() {
         childId: selectedChild._id,
         taskTemplateId: task._id,
       });
+      // Show celebration animation
+      setShowCelebration(true);
     }
   };
 
@@ -73,6 +77,9 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-6 pb-20 md:pb-6">
+      {/* Celebration Animation */}
+      <Confetti show={showCelebration} onComplete={() => setShowCelebration(false)} />
+
       {/* Child Selector */}
       <div className="flex items-center gap-3 overflow-x-auto pb-2">
         {children.map((child) => (

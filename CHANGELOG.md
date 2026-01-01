@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-01-01
+
+### Added
+
+- **Parent PIN Protection**: 4-digit PIN code to protect parent area with 15-minute session timeout
+- **Mobile Parent Access**: Added "הורה" (Parent) button to mobile bottom navigation
+- **PWA Support**: Progressive Web App capability for mobile installation with manifest.json and app icon
+- **Celebration Animation**: Confetti animation with emoji burst when completing tasks
+- **Task Management Page (Parent)**: Full CRUD interface for managing morning, evening, and special tasks
+- **Settings Page (Parent)**: New settings page with account info, PIN management, and sign out
+
+### Changed
+
+- Removed "Add Child" from dashboard - now only available in parent area
+- Replaced reports link with parent link in mobile navigation
+- Removed Clerk UserButton from parent header (settings now in dedicated page)
+- Dashboard auto-redirects to parent area when no children exist
+
+### Security
+
+- PIN codes are hashed before storage
+- Parent session expires after 15 minutes of inactivity with activity tracking
+
 ## [1.0.2] - 2026-01-01
 
 ### Fixed
