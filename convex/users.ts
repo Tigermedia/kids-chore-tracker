@@ -94,76 +94,81 @@ export const getCurrentUser = query({
 // Ensure user exists (create if not) - fallback if webhook didn't work
 export const ensureUser = mutation({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated - please sign in");
-    }
-
-    // Extract user info from identity (handle various property names)
-    const clerkId = identity.subject;
-    // Cast to string since identity properties may return JSONValue type
-    const email = String(identity.email || identity.emailAddress || `${clerkId}@temp.local`);
-    const name = identity.name || (identity.givenName as string | undefined) || undefined;
-    // Clerk uses pictureUrl in Convex identity
-    const imageUrl = identity.pictureUrl || undefined;
-
-    // Check if user already exists
-    const existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
-      .unique();
-
-    if (existingUser) {
-      // Check if user has a family
-      const familyMember = await ctx.db
-        .query("familyMembers")
-        .withIndex("by_userId", (q) => q.eq("userId", existingUser._id))
-        .first();
-
-      if (!familyMember) {
-        // Create family for existing user
-        const familyId = await ctx.db.insert("families", {
-          name: existingUser.name ? `משפחת ${existingUser.name.split(" ")[0]}` : "המשפחה שלי",
-          ownerId: existingUser._id,
-          createdAt: Date.now(),
-        });
-
-        await ctx.db.insert("familyMembers", {
-          familyId,
-          userId: existingUser._id,
-          role: "owner",
-          joinedAt: Date.now(),
-        });
+    try {
+      const identity = await ctx.auth.getUserIdentity();
+      if (!identity) {
+        throw new Error("Not authenticated - please sign in");
       }
 
-      return existingUser._id;
+      // Extract user info from identity
+      const clerkId = identity.subject;
+      // Use only standard Convex identity properties
+      const email = identity.email ?? `${clerkId}@temp.local`;
+      const name = identity.name ?? undefined;
+      const imageUrl = identity.pictureUrl ?? undefined;
+
+      // Check if user already exists
+      const existingUser = await ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+        .unique();
+
+      if (existingUser) {
+        // Check if user has a family
+        const familyMember = await ctx.db
+          .query("familyMembers")
+          .withIndex("by_userId", (q) => q.eq("userId", existingUser._id))
+          .first();
+
+        if (!familyMember) {
+          // Create family for existing user
+          const familyId = await ctx.db.insert("families", {
+            name: existingUser.name ? `משפחת ${existingUser.name.split(" ")[0]}` : "המשפחה שלי",
+            ownerId: existingUser._id,
+            createdAt: Date.now(),
+          });
+
+          await ctx.db.insert("familyMembers", {
+            familyId,
+            userId: existingUser._id,
+            role: "owner",
+            joinedAt: Date.now(),
+          });
+        }
+
+        return existingUser._id;
+      }
+
+      // Create new user
+      const userId = await ctx.db.insert("users", {
+        clerkId,
+        email,
+        name,
+        imageUrl,
+        createdAt: Date.now(),
+      });
+
+      // Create a default family for the user
+      const familyId = await ctx.db.insert("families", {
+        name: name ? `משפחת ${name.split(" ")[0]}` : "המשפחה שלי",
+        ownerId: userId,
+        createdAt: Date.now(),
+      });
+
+      // Add user as family owner
+      await ctx.db.insert("familyMembers", {
+        familyId,
+        userId,
+        role: "owner",
+        joinedAt: Date.now(),
+      });
+
+      return userId;
+    } catch (error) {
+      // Log the actual error for debugging
+      console.error("ensureUser error:", error);
+      throw error;
     }
-
-    // Create new user
-    const userId = await ctx.db.insert("users", {
-      clerkId,
-      email,
-      name,
-      imageUrl,
-      createdAt: Date.now(),
-    });
-
-    // Create a default family for the user
-    const familyId = await ctx.db.insert("families", {
-      name: name ? `משפחת ${name.split(" ")[0]}` : "המשפחה שלי",
-      ownerId: userId,
-      createdAt: Date.now(),
-    });
-
-    // Add user as family owner
-    await ctx.db.insert("familyMembers", {
-      familyId,
-      userId,
-      role: "owner",
-      joinedAt: Date.now(),
-    });
-
-    return userId;
   },
 });
 
