@@ -126,3 +126,40 @@ export const verifyParentPin = mutation({
     return hashedInput === family.parentPin;
   },
 });
+
+// Update family name
+export const updateFamilyName = mutation({
+  args: {
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const familyMember = await ctx.db
+      .query("familyMembers")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+
+    if (!familyMember) {
+      throw new Error("No family found");
+    }
+
+    await ctx.db.patch(familyMember.familyId, {
+      name: args.name,
+    });
+
+    return true;
+  },
+});

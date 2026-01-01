@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { api } from "../../../../../convex/_generated/api";
@@ -12,6 +12,14 @@ export default function SettingsPage() {
   const family = useQuery(api.users.getUserFamily);
   const hasPin = useQuery(api.families.hasParentPin);
 
+  // Edit states
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingFamily, setIsEditingFamily] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editFamily, setEditFamily] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [savingFamily, setSavingFamily] = useState(false);
+
   const [showPinChange, setShowPinChange] = useState(false);
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -21,6 +29,47 @@ export default function SettingsPage() {
 
   const verifyParentPin = useMutation(api.families.verifyParentPin);
   const setParentPin = useMutation(api.families.setParentPin);
+  const updateFamilyName = useMutation(api.families.updateFamilyName);
+
+  // Initialize edit values when data loads
+  useEffect(() => {
+    if (user?.fullName || user?.firstName) {
+      setEditName(user.fullName || user.firstName || "");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (family?.name) {
+      setEditFamily(family.name);
+    }
+  }, [family]);
+
+  const handleSaveName = async () => {
+    if (!editName.trim()) return;
+    setSavingName(true);
+    try {
+      await user?.update({
+        firstName: editName.split(" ")[0],
+        lastName: editName.split(" ").slice(1).join(" ") || undefined,
+      });
+      setIsEditingName(false);
+    } catch (error) {
+      console.error("Failed to update name:", error);
+    }
+    setSavingName(false);
+  };
+
+  const handleSaveFamily = async () => {
+    if (!editFamily.trim()) return;
+    setSavingFamily(true);
+    try {
+      await updateFamilyName({ name: editFamily.trim() });
+      setIsEditingFamily(false);
+    } catch (error) {
+      console.error("Failed to update family name:", error);
+    }
+    setSavingFamily(false);
+  };
 
   const handlePinChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,17 +126,98 @@ export default function SettingsPage() {
           פרטי חשבון
         </h2>
         <div className="space-y-3">
+          {/* Name - Editable */}
           <div className="flex items-center justify-between py-2 border-b">
             <span className="text-gray-500">שם</span>
-            <span className="font-medium">{user?.fullName || user?.firstName || "משתמש"}</span>
+            {isEditingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="border rounded-lg px-3 py-1 text-sm w-40"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={savingName}
+                  className="text-[#22d1c6] hover:text-[#1db3a9]"
+                >
+                  <span className="material-symbols-outlined text-xl">
+                    {savingName ? "hourglass_empty" : "check"}
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditingName(false);
+                    setEditName(user?.fullName || user?.firstName || "");
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <span className="material-symbols-outlined text-xl">close</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{user?.fullName || user?.firstName || "משתמש"}</span>
+                <button
+                  onClick={() => setIsEditingName(true)}
+                  className="text-gray-400 hover:text-[#a29bfe]"
+                >
+                  <span className="material-symbols-outlined text-lg">edit</span>
+                </button>
+              </div>
+            )}
           </div>
+
+          {/* Email - Read only */}
           <div className="flex items-center justify-between py-2 border-b">
             <span className="text-gray-500">אימייל</span>
             <span className="font-medium">{user?.primaryEmailAddress?.emailAddress}</span>
           </div>
+
+          {/* Family Name - Editable */}
           <div className="flex items-center justify-between py-2">
             <span className="text-gray-500">משפחה</span>
-            <span className="font-medium">{family?.name || "טוען..."}</span>
+            {isEditingFamily ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editFamily}
+                  onChange={(e) => setEditFamily(e.target.value)}
+                  className="border rounded-lg px-3 py-1 text-sm w-40"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveFamily}
+                  disabled={savingFamily}
+                  className="text-[#22d1c6] hover:text-[#1db3a9]"
+                >
+                  <span className="material-symbols-outlined text-xl">
+                    {savingFamily ? "hourglass_empty" : "check"}
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditingFamily(false);
+                    setEditFamily(family?.name || "");
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <span className="material-symbols-outlined text-xl">close</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{family?.name || "טוען..."}</span>
+                <button
+                  onClick={() => setIsEditingFamily(true)}
+                  className="text-gray-400 hover:text-[#a29bfe]"
+                >
+                  <span className="material-symbols-outlined text-lg">edit</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

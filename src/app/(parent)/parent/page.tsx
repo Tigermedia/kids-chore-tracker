@@ -126,6 +126,32 @@ export default function ParentDashboard() {
             הגדר פרסים מותאמים אישית
           </div>
         </Link>
+
+        <Link
+          href="/parent/reports"
+          className="bg-[#22d1c6] text-white rounded-2xl p-6 hover:shadow-lg transition-all card-hover"
+        >
+          <span className="material-symbols-outlined text-4xl mb-2">
+            analytics
+          </span>
+          <div className="font-bold text-lg">דוחות</div>
+          <div className="text-white/80 text-sm">
+            צפה בהתקדמות וסטטיסטיקות
+          </div>
+        </Link>
+
+        <Link
+          href="/parent/settings"
+          className="bg-[#95e1d3] text-gray-800 rounded-2xl p-6 hover:shadow-lg transition-all card-hover"
+        >
+          <span className="material-symbols-outlined text-4xl mb-2">
+            settings
+          </span>
+          <div className="font-bold text-lg">הגדרות</div>
+          <div className="text-gray-600 text-sm">
+            ניהול חשבון וקוד PIN
+          </div>
+        </Link>
       </div>
     </div>
   );
