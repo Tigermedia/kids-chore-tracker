@@ -94,8 +94,13 @@ export const getCurrentUser = query({
 // Ensure user exists (create if not) - fallback if webhook didn't work
 export const ensureUser = mutation({
   handler: async (ctx) => {
+    console.log("[ensureUser] Starting...");
+
     const identity = await ctx.auth.getUserIdentity();
+    console.log("[ensureUser] Identity:", identity ? "Found" : "Not found");
+
     if (!identity) {
+      console.error("[ensureUser] No identity found - user not authenticated");
       throw new Error("Not authenticated - please sign in");
     }
 
@@ -106,6 +111,10 @@ export const ensureUser = mutation({
     // Clerk uses pictureUrl in Convex identity
     const imageUrl = identity.pictureUrl || undefined;
 
+    console.log("[ensureUser] Clerk ID:", clerkId);
+    console.log("[ensureUser] Email:", email);
+    console.log("[ensureUser] Name:", name);
+
     // Check if user already exists
     const existingUser = await ctx.db
       .query("users")
@@ -113,6 +122,8 @@ export const ensureUser = mutation({
       .unique();
 
     if (existingUser) {
+      console.log("[ensureUser] User found:", existingUser._id);
+
       // Check if user has a family
       const familyMember = await ctx.db
         .query("familyMembers")
@@ -120,6 +131,8 @@ export const ensureUser = mutation({
         .first();
 
       if (!familyMember) {
+        console.log("[ensureUser] No family found for user, creating...");
+
         // Create family for existing user
         const familyId = await ctx.db.insert("families", {
           name: existingUser.name ? `משפחת ${existingUser.name.split(" ")[0]}` : "המשפחה שלי",
@@ -127,16 +140,25 @@ export const ensureUser = mutation({
           createdAt: Date.now(),
         });
 
+        console.log("[ensureUser] Family created:", familyId);
+
         await ctx.db.insert("familyMembers", {
           familyId,
           userId: existingUser._id,
           role: "owner",
           joinedAt: Date.now(),
         });
+
+        console.log("[ensureUser] Family member created");
+      } else {
+        console.log("[ensureUser] User already has family:", familyMember.familyId);
       }
 
+      console.log("[ensureUser] Returning existing user ID:", existingUser._id);
       return existingUser._id;
     }
+
+    console.log("[ensureUser] User not found, creating new user...");
 
     // Create new user
     const userId = await ctx.db.insert("users", {
@@ -147,12 +169,16 @@ export const ensureUser = mutation({
       createdAt: Date.now(),
     });
 
+    console.log("[ensureUser] User created:", userId);
+
     // Create a default family for the user
     const familyId = await ctx.db.insert("families", {
       name: name ? `משפחת ${name.split(" ")[0]}` : "המשפחה שלי",
       ownerId: userId,
       createdAt: Date.now(),
     });
+
+    console.log("[ensureUser] Family created:", familyId);
 
     // Add user as family owner
     await ctx.db.insert("familyMembers", {
@@ -161,6 +187,9 @@ export const ensureUser = mutation({
       role: "owner",
       joinedAt: Date.now(),
     });
+
+    console.log("[ensureUser] Family member created");
+    console.log("[ensureUser] Completed successfully, returning user ID:", userId);
 
     return userId;
   },

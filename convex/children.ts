@@ -52,28 +52,45 @@ export const createChild = mutation({
     theme: v.string(),
   },
   handler: async (ctx, args) => {
+    console.log("[createChild] Starting with args:", args);
+
     const identity = await ctx.auth.getUserIdentity();
+    console.log("[createChild] Identity:", identity ? "Found" : "Not found");
+
     if (!identity) {
+      console.error("[createChild] Not authenticated");
       throw new Error("Not authenticated");
     }
+
+    console.log("[createChild] Looking up user with Clerk ID:", identity.subject);
 
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
+    console.log("[createChild] User found:", user ? user._id : "Not found");
+
     if (!user) {
+      console.error("[createChild] User not found in database");
       throw new Error("User not found");
     }
+
+    console.log("[createChild] Looking up family member for user:", user._id);
 
     const familyMember = await ctx.db
       .query("familyMembers")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .first();
 
+    console.log("[createChild] Family member found:", familyMember ? familyMember.familyId : "Not found");
+
     if (!familyMember) {
+      console.error("[createChild] Family not found for user");
       throw new Error("Family not found");
     }
+
+    console.log("[createChild] Creating child in family:", familyMember.familyId);
 
     const childId = await ctx.db.insert("children", {
       familyId: familyMember.familyId,
@@ -88,7 +105,10 @@ export const createChild = mutation({
       createdAt: Date.now(),
     });
 
+    console.log("[createChild] Child created:", childId);
+
     // Create default morning tasks
+    console.log("[createChild] Creating default morning tasks...");
     const morningTasks = [
       { name: "להתלבש", icon: "👕", points: 5 },
       { name: "לצחצח שיניים", icon: "🪥", points: 5 },
@@ -119,6 +139,8 @@ export const createChild = mutation({
       });
     }
 
+    console.log("[createChild] Created", morningTasks.length, "morning tasks");
+
     for (const task of eveningTasks) {
       await ctx.db.insert("taskTemplates", {
         childId,
@@ -133,6 +155,9 @@ export const createChild = mutation({
         createdAt: Date.now(),
       });
     }
+
+    console.log("[createChild] Created", eveningTasks.length, "evening tasks");
+    console.log("[createChild] Completed successfully, returning child ID:", childId);
 
     return childId;
   },

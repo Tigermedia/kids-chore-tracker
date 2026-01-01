@@ -80,26 +80,55 @@ export default function DashboardPage() {
     setError(null);
 
     try {
-      // Ensure user and family exist before creating child
-      console.log("Step 1: Calling ensureUser...");
-      await ensureUser();
-      console.log("Step 2: ensureUser completed, creating child...");
+      console.log("=== Starting child creation process ===");
 
-      await createChild({
+      // Step 1: Ensure user and family exist
+      console.log("Step 1: Calling ensureUser...");
+      const userId = await ensureUser();
+      console.log("Step 2: ensureUser completed. User ID:", userId);
+
+      // Add a small delay to ensure database consistency
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 2: Create child
+      console.log("Step 3: Creating child with name:", newChildName.trim());
+      const childId = await createChild({
         name: newChildName.trim(),
         avatar: selectedAvatar,
         theme: "#22d1c6",
       });
-      console.log("Step 3: Child created successfully");
+      console.log("Step 4: Child created successfully! Child ID:", childId);
 
+      // Success!
       setNewChildName("");
       setSelectedAvatar("😊");
       setShowAddChild(false);
+      console.log("=== Child creation completed successfully ===");
     } catch (err: unknown) {
-      console.error("Error details:", err);
-      // Show actual error message to help debug
-      const message = err instanceof Error ? err.message : String(err);
-      setError(`שגיאה: ${message}`);
+      console.error("=== Error creating child ===");
+      console.error("Error object:", err);
+      console.error("Error type:", typeof err);
+
+      // Extract detailed error message
+      let message = "שגיאה לא ידועה";
+      if (err instanceof Error) {
+        message = err.message;
+        console.error("Error message:", err.message);
+        console.error("Error stack:", err.stack);
+      } else {
+        message = String(err);
+      }
+
+      // Show user-friendly error in Hebrew
+      if (message.includes("Not authenticated")) {
+        setError("שגיאת אימות. אנא נסה להתנתק ולהתחבר מחדש.");
+      } else if (message.includes("User not found")) {
+        setError("המשתמש לא נמצא. אנא רענן את הדף ונסה שוב.");
+      } else if (message.includes("Family not found")) {
+        setError("משפחה לא נמצאה. אנא רענן את הדף ונסה שוב.");
+      } else {
+        setError(`שגיאה: ${message}`);
+      }
     } finally {
       setIsCreating(false);
     }
