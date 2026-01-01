@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -42,8 +42,11 @@ export default function DashboardPage() {
   const [showAddChild, setShowAddChild] = useState(false);
   const [newChildName, setNewChildName] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState("😊");
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const createChild = useMutation(api.children.createChild);
+  const ensureUser = useMutation(api.users.ensureUser);
 
   const avatars = [
     // פרצופים
@@ -71,17 +74,30 @@ export default function DashboardPage() {
       : children?.[0];
 
   const handleAddChild = async () => {
-    if (!newChildName.trim()) return;
+    if (!newChildName.trim() || isCreating) return;
 
-    await createChild({
-      name: newChildName.trim(),
-      avatar: selectedAvatar,
-      theme: "#22d1c6",
-    });
+    setIsCreating(true);
+    setError(null);
 
-    setNewChildName("");
-    setSelectedAvatar("😊");
-    setShowAddChild(false);
+    try {
+      // Ensure user and family exist before creating child
+      await ensureUser();
+
+      await createChild({
+        name: newChildName.trim(),
+        avatar: selectedAvatar,
+        theme: "#22d1c6",
+      });
+
+      setNewChildName("");
+      setSelectedAvatar("😊");
+      setShowAddChild(false);
+    } catch (err) {
+      console.error("Error creating child:", err);
+      setError("לא הצלחנו להוסיף את הילד. נסה שוב.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   if (!children) {
@@ -132,12 +148,18 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm">
+              {error}
+            </div>
+          )}
+
           <button
             onClick={handleAddChild}
-            disabled={!newChildName.trim()}
+            disabled={!newChildName.trim() || isCreating}
             className="w-full bg-[#22d1c6] text-white py-3 rounded-xl font-bold hover:bg-[#1db8ae] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            הוסף ילד 🎉
+            {isCreating ? "מוסיף..." : "הוסף ילד 🎉"}
           </button>
         </div>
       </div>
@@ -323,19 +345,29 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+
             <div className="flex gap-3">
               <button
-                onClick={() => setShowAddChild(false)}
-                className="flex-1 py-3 rounded-xl border border-gray-200 font-medium hover:bg-gray-50"
+                onClick={() => {
+                  setShowAddChild(false);
+                  setError(null);
+                }}
+                disabled={isCreating}
+                className="flex-1 py-3 rounded-xl border border-gray-200 font-medium hover:bg-gray-50 disabled:opacity-50"
               >
                 ביטול
               </button>
               <button
                 onClick={handleAddChild}
-                disabled={!newChildName.trim()}
+                disabled={!newChildName.trim() || isCreating}
                 className="flex-1 bg-[#22d1c6] text-white py-3 rounded-xl font-bold hover:bg-[#1db8ae] transition-colors disabled:opacity-50"
               >
-                הוסף 🎉
+                {isCreating ? "מוסיף..." : "הוסף 🎉"}
               </button>
             </div>
           </div>

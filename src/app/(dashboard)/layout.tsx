@@ -37,10 +37,16 @@ export default function DashboardLayout({
 
   // Ensure user and family exist (fallback if webhook didn't work)
   useEffect(() => {
+    // user is undefined while loading, null when doesn't exist
+    // Only run ensureUser when we're sure user doesn't exist (user === null)
     if (user === null && !userEnsured) {
       ensureUser()
         .then(() => setUserEnsured(true))
         .catch(console.error);
+    }
+    // Also set userEnsured to true if user already exists
+    if (user !== undefined && user !== null && !userEnsured) {
+      setUserEnsured(true);
     }
   }, [user, userEnsured, ensureUser]);
 

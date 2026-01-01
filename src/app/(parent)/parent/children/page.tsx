@@ -10,10 +10,13 @@ export default function ManageChildrenPage() {
   const createChild = useMutation(api.children.createChild);
   const updateChild = useMutation(api.children.updateChild);
   const deleteChild = useMutation(api.children.deleteChild);
+  const ensureUser = useMutation(api.users.ensureUser);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingChild, setEditingChild] = useState<Id<"children"> | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"children"> | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [formName, setFormName] = useState("");
   const [formAvatar, setFormAvatar] = useState("😊");
@@ -40,16 +43,29 @@ export default function ManageChildrenPage() {
   ];
 
   const handleAddChild = async () => {
-    if (!formName.trim()) return;
+    if (!formName.trim() || isCreating) return;
 
-    await createChild({
-      name: formName.trim(),
-      avatar: formAvatar,
-      theme: formTheme,
-    });
+    setIsCreating(true);
+    setError(null);
 
-    resetForm();
-    setShowAddModal(false);
+    try {
+      // Ensure user and family exist before creating child
+      await ensureUser();
+
+      await createChild({
+        name: formName.trim(),
+        avatar: formAvatar,
+        theme: formTheme,
+      });
+
+      resetForm();
+      setShowAddModal(false);
+    } catch (err) {
+      console.error("Error creating child:", err);
+      setError("לא הצלחנו להוסיף את הילד. נסה שוב.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleEditChild = async () => {
@@ -82,6 +98,7 @@ export default function ManageChildrenPage() {
     setFormName("");
     setFormAvatar("😊");
     setFormTheme("#22d1c6");
+    setError(null);
   };
 
   if (!children) {
@@ -276,6 +293,13 @@ export default function ManageChildrenPage() {
               </div>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex gap-3">
               <button
@@ -284,16 +308,17 @@ export default function ManageChildrenPage() {
                   setEditingChild(null);
                   resetForm();
                 }}
-                className="flex-1 py-3 rounded-xl border border-gray-200 font-medium hover:bg-gray-50"
+                disabled={isCreating}
+                className="flex-1 py-3 rounded-xl border border-gray-200 font-medium hover:bg-gray-50 disabled:opacity-50"
               >
                 ביטול
               </button>
               <button
                 onClick={editingChild ? handleEditChild : handleAddChild}
-                disabled={!formName.trim()}
+                disabled={!formName.trim() || isCreating}
                 className="flex-1 bg-[#a29bfe] text-white py-3 rounded-xl font-bold hover:bg-[#8b84e8] transition-colors disabled:opacity-50"
               >
-                {editingChild ? "שמור שינויים" : "הוסף ילד"} 🎉
+                {isCreating ? "מוסיף..." : editingChild ? "שמור שינויים" : "הוסף ילד"} {!isCreating && "🎉"}
               </button>
             </div>
           </div>
