@@ -44,6 +44,26 @@ export const createUser = mutation({
       joinedAt: Date.now(),
     });
 
+    // Initialize default rewards for the new family
+    const defaultRewards = [
+      { name: "30 דקות טלוויזיה", icon: "📺", description: "30 דקות צפייה בטלוויזיה", cost: 50 },
+      { name: "גלידה", icon: "🍦", description: "גלידה לבחירתך", cost: 75 },
+      { name: "משחק מחשב", icon: "🎮", description: "30 דקות משחקי מחשב", cost: 60 },
+      { name: "לילה להישאר ער", icon: "🌙", description: "להישאר ער חצי שעה יותר", cost: 100 },
+      { name: "מתנה קטנה", icon: "🎁", description: "מתנה הפתעה קטנה", cost: 200 },
+      { name: "יום בילוי", icon: "🎢", description: "יום כיף לבחירתך", cost: 500 },
+    ];
+
+    for (const reward of defaultRewards) {
+      await ctx.db.insert("rewards", {
+        familyId,
+        ...reward,
+        isActive: true,
+        isDefault: true,
+        createdAt: Date.now(),
+      });
+    }
+
     return userId;
   },
 });
@@ -150,6 +170,29 @@ export const ensureUser = mutation({
         });
 
         console.log("[ensureUser] Family member created");
+
+        // Initialize default rewards for the new family
+        console.log("[ensureUser] Initializing default rewards for existing user...");
+        const defaultRewards = [
+          { name: "30 דקות טלוויזיה", icon: "📺", description: "30 דקות צפייה בטלוויזיה", cost: 50 },
+          { name: "גלידה", icon: "🍦", description: "גלידה לבחירתך", cost: 75 },
+          { name: "משחק מחשב", icon: "🎮", description: "30 דקות משחקי מחשב", cost: 60 },
+          { name: "לילה להישאר ער", icon: "🌙", description: "להישאר ער חצי שעה יותר", cost: 100 },
+          { name: "מתנה קטנה", icon: "🎁", description: "מתנה הפתעה קטנה", cost: 200 },
+          { name: "יום בילוי", icon: "🎢", description: "יום כיף לבחירתך", cost: 500 },
+        ];
+
+        for (const reward of defaultRewards) {
+          await ctx.db.insert("rewards", {
+            familyId,
+            ...reward,
+            isActive: true,
+            isDefault: true,
+            createdAt: Date.now(),
+          });
+        }
+
+        console.log("[ensureUser] Created", defaultRewards.length, "default rewards");
       } else {
         console.log("[ensureUser] User already has family:", familyMember.familyId);
       }
@@ -189,6 +232,29 @@ export const ensureUser = mutation({
     });
 
     console.log("[ensureUser] Family member created");
+
+    // Initialize default rewards for the new family
+    console.log("[ensureUser] Initializing default rewards...");
+    const defaultRewards = [
+      { name: "30 דקות טלוויזיה", icon: "📺", description: "30 דקות צפייה בטלוויזיה", cost: 50 },
+      { name: "גלידה", icon: "🍦", description: "גלידה לבחירתך", cost: 75 },
+      { name: "משחק מחשב", icon: "🎮", description: "30 דקות משחקי מחשב", cost: 60 },
+      { name: "לילה להישאר ער", icon: "🌙", description: "להישאר ער חצי שעה יותר", cost: 100 },
+      { name: "מתנה קטנה", icon: "🎁", description: "מתנה הפתעה קטנה", cost: 200 },
+      { name: "יום בילוי", icon: "🎢", description: "יום כיף לבחירתך", cost: 500 },
+    ];
+
+    for (const reward of defaultRewards) {
+      await ctx.db.insert("rewards", {
+        familyId,
+        ...reward,
+        isActive: true,
+        isDefault: true,
+        createdAt: Date.now(),
+      });
+    }
+
+    console.log("[ensureUser] Created", defaultRewards.length, "default rewards");
     console.log("[ensureUser] Completed successfully, returning user ID:", userId);
 
     return userId;

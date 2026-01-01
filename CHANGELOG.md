@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-01-01
+
+### Fixed
+- Shop page now shows default rewards for all new families
+- Automatically create 6 default rewards when a new family is created
+
+### Added
+- Default rewards initialization in `createUser` (Clerk webhook)
+- Default rewards initialization in `ensureUser` for both new users and existing users without families
+- Default rewards: TV time (50 pts), Ice cream (75 pts), Video games (60 pts), Stay up late (100 pts), Small gift (200 pts), Fun day out (500 pts)
+
 ## [1.0.3] - 2026-01-01
 
 ### Fixed
