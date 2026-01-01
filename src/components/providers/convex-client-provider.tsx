@@ -10,10 +10,22 @@ const convex = new ConvexReactClient(
   process.env.NEXT_PUBLIC_CONVEX_URL as string
 );
 
+// Extend Hebrew localization with custom placeholders
+const hebrewLocalization = {
+  ...heIL,
+  formFieldInputPlaceholder__firstName: "שם פרטי",
+  formFieldInputPlaceholder__lastName: "שם משפחה",
+  formFieldInputPlaceholder__emailAddress: "הכנס כתובת אימייל",
+  formFieldInputPlaceholder__password: "הכנס סיסמה",
+  formFieldInputPlaceholder__confirmPassword: "אשר סיסמה",
+  formFieldInputPlaceholder__username: "שם משתמש",
+  formFieldInputPlaceholder__phoneNumber: "מספר טלפון",
+};
+
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider
-      localization={heIL}
+      localization={hebrewLocalization}
       appearance={{
         layout: {
           socialButtonsPlacement: "top",
