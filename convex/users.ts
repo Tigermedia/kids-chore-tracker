@@ -101,8 +101,9 @@ export const ensureUser = mutation({
 
     // Extract user info from identity (handle various property names)
     const clerkId = identity.subject;
-    const email = identity.email || identity.emailAddress || `${clerkId}@temp.local`;
-    const name = identity.name || identity.givenName || undefined;
+    // Cast to string since identity properties may return JSONValue type
+    const email = String(identity.email || identity.emailAddress || `${clerkId}@temp.local`);
+    const name = identity.name || (identity.givenName as string | undefined) || undefined;
     // Clerk uses pictureUrl in Convex identity
     const imageUrl = identity.pictureUrl || undefined;
 
