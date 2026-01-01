@@ -8,9 +8,12 @@
  * @module
  */
 
+import type * as achievements from "../achievements.js";
 import type * as children from "../children.js";
 import type * as notifications from "../notifications.js";
 import type * as pointReductions from "../pointReductions.js";
+import type * as rewards from "../rewards.js";
+import type * as tasks from "../tasks.js";
 import type * as users from "../users.js";
 
 import type {
@@ -20,9 +23,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  achievements: typeof achievements;
   children: typeof children;
   notifications: typeof notifications;
   pointReductions: typeof pointReductions;
+  rewards: typeof rewards;
+  tasks: typeof tasks;
   users: typeof users;
 }>;
 

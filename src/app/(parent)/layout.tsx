@@ -3,6 +3,7 @@
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { APP_VERSION } from "../../lib/version";
 
 export default function ParentLayout({
   children,
@@ -73,6 +74,11 @@ export default function ParentLayout({
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">{children}</main>
+
+      {/* Footer */}
+      <footer className="text-center py-4 text-gray-400 text-sm">
+        <p>v{APP_VERSION}</p>
+      </footer>
     </div>
   );
 }

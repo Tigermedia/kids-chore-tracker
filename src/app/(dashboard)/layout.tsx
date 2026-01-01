@@ -1,20 +1,33 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useEffect, useState } from "react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { APP_VERSION } from "../../lib/version";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [userEnsured, setUserEnsured] = useState(false);
   const user = useQuery(api.users.getCurrentUser);
   const family = useQuery(api.users.getUserFamily);
   const children_list = useQuery(api.children.listByFamily);
   const pathname = usePathname();
+  const ensureUser = useMutation(api.users.ensureUser);
+
+  // Ensure user and family exist (fallback if webhook didn't work)
+  useEffect(() => {
+    if (user === null && !userEnsured) {
+      ensureUser()
+        .then(() => setUserEnsured(true))
+        .catch(console.error);
+    }
+  }, [user, userEnsured, ensureUser]);
 
   const navItems = [
     { href: "/dashboard", label: "ראשי", icon: "home" },
@@ -95,6 +108,11 @@ export default function DashboardLayout({
       </nav>
 
       {/* Desktop Sidebar would go here if needed */}
+
+      {/* Footer */}
+      <footer className="hidden md:block text-center py-4 text-gray-400 text-sm">
+        <p>v{APP_VERSION}</p>
+      </footer>
     </div>
   );
 }

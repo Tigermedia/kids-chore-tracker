@@ -91,6 +91,74 @@ export const getCurrentUser = query({
   },
 });
 
+// Ensure user exists (create if not) - fallback if webhook didn't work
+export const ensureUser = mutation({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    // Check if user already exists
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (existingUser) {
+      // Check if user has a family
+      const familyMember = await ctx.db
+        .query("familyMembers")
+        .withIndex("by_userId", (q) => q.eq("userId", existingUser._id))
+        .first();
+
+      if (!familyMember) {
+        // Create family for existing user
+        const familyId = await ctx.db.insert("families", {
+          name: existingUser.name ? `משפחת ${existingUser.name.split(" ")[0]}` : "המשפחה שלי",
+          ownerId: existingUser._id,
+          createdAt: Date.now(),
+        });
+
+        await ctx.db.insert("familyMembers", {
+          familyId,
+          userId: existingUser._id,
+          role: "owner",
+          joinedAt: Date.now(),
+        });
+      }
+
+      return existingUser._id;
+    }
+
+    // Create new user
+    const userId = await ctx.db.insert("users", {
+      clerkId: identity.subject,
+      email: identity.email || "",
+      name: identity.name,
+      imageUrl: identity.pictureUrl,
+      createdAt: Date.now(),
+    });
+
+    // Create a default family for the user
+    const familyId = await ctx.db.insert("families", {
+      name: identity.name ? `משפחת ${identity.name.split(" ")[0]}` : "המשפחה שלי",
+      ownerId: userId,
+      createdAt: Date.now(),
+    });
+
+    // Add user as family owner
+    await ctx.db.insert("familyMembers", {
+      familyId,
+      userId,
+      role: "owner",
+      joinedAt: Date.now(),
+    });
+
+    return userId;
+  },
+});
+
 // Get user by Clerk ID
 export const getUserByClerkId = query({
   args: { clerkId: v.string() },
