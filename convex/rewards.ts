@@ -1,5 +1,41 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
+
+// Default rewards data
+const DEFAULT_REWARDS = [
+  { name: "30 דקות טלוויזיה", icon: "📺", description: "30 דקות צפייה בטלוויזיה", cost: 50 },
+  { name: "גלידה", icon: "🍦", description: "גלידה לבחירתך", cost: 75 },
+  { name: "משחק מחשב", icon: "🎮", description: "30 דקות משחקי מחשב", cost: 60 },
+  { name: "לילה להישאר ער", icon: "🌙", description: "להישאר ער חצי שעה יותר", cost: 100 },
+  { name: "מתנה קטנה", icon: "🎁", description: "מתנה הפתעה קטנה", cost: 200 },
+  { name: "יום בילוי", icon: "🎢", description: "יום כיף לבחירתך", cost: 500 },
+];
+
+// Internal mutation for initializing rewards (called from users.ts)
+export const initializeDefaultRewardsInternal = internalMutation({
+  args: { familyId: v.id("families") },
+  handler: async (ctx, args) => {
+    // Check if rewards already exist for this family
+    const existingRewards = await ctx.db
+      .query("rewards")
+      .withIndex("by_familyId", (q) => q.eq("familyId", args.familyId))
+      .first();
+
+    if (existingRewards) {
+      return; // Rewards already initialized
+    }
+
+    for (const reward of DEFAULT_REWARDS) {
+      await ctx.db.insert("rewards", {
+        familyId: args.familyId,
+        ...reward,
+        isActive: true,
+        isDefault: true,
+        createdAt: Date.now(),
+      });
+    }
+  },
+});
 
 // Get all rewards for a family
 export const listByFamily = query({

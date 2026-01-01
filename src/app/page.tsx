@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { APP_VERSION } from "@/lib/version";
 
 export default async function HomePage() {
   const { userId } = await auth();
@@ -16,7 +17,7 @@ export default async function HomePage() {
       <div className="container mx-auto px-4 py-16">
         <div className="text-center">
           <h1 className="text-6xl font-bold text-white mb-6 drop-shadow-lg">
-            משימות ילדים 🌟
+            כוכבים ⭐
           </h1>
           <div className="text-xl text-white/90 mb-8 max-w-3xl mx-auto space-y-4">
             <p className="text-2xl">
@@ -103,6 +104,7 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className="text-center py-8 text-white/60">
         <p>נבנה באהבה למשפחות ישראליות 💜</p>
+        <p className="text-sm mt-2">v{APP_VERSION}</p>
       </footer>
     </div>
   );

@@ -10,7 +10,7 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "משימות ילדים - Kids Chore Tracker",
+  title: "כוכבים - Stars Kids Chore Tracker",
   description: "אפליקציה אינטראקטיבית למעקב אחר משימות ילדים עם נקודות ופרסים",
   manifest: "/manifest.json",
   icons: {
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "משימות ילדים",
+    title: "כוכבים",
   },
   formatDetection: {
     telephone: false,

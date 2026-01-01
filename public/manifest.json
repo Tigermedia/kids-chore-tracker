@@ -1,6 +1,6 @@
 {
-  "name": "משימות ילדים - Kids Chore Tracker",
-  "short_name": "משימות ילדים",
+  "name": "כוכבים - Stars Kids Chore Tracker",
+  "short_name": "כוכבים",
   "description": "אפליקציה אינטראקטיבית למעקב אחר משימות ילדים עם נקודות ופרסים",
   "start_url": "/dashboard",
   "display": "standalone",

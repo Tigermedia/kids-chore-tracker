@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { APP_VERSION } from "../../lib/version";
@@ -65,7 +64,7 @@ export default function DashboardLayout({
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-2xl font-bold text-[#22d1c6]">
-              משימות ילדים 🌟
+              כוכבים ⭐
             </Link>
             {family && (
               <span className="text-gray-500 text-sm hidden md:block">
@@ -153,17 +152,6 @@ export default function DashboardLayout({
               </span>
               מצב הורה
             </Link>
-
-            {/* User Button */}
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "w-10 h-10",
-                  userButtonPopoverCard: "rounded-xl",
-                },
-              }}
-              showName={false}
-            />
           </div>
         </div>
       </header>

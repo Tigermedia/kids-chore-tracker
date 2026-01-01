@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 // Create a new user (called from Clerk webhook)
 export const createUser = mutation({
@@ -43,6 +44,9 @@ export const createUser = mutation({
       role: "owner",
       joinedAt: Date.now(),
     });
+
+    // Initialize default rewards for the family
+    await ctx.scheduler.runAfter(0, internal.rewards.initializeDefaultRewardsInternal, { familyId });
 
     return userId;
   },
@@ -145,6 +149,10 @@ export const ensureUser = mutation({
             joinedAt: Date.now(),
           });
           console.log("ensureUser: FamilyMember created");
+
+          // Initialize default rewards
+          await ctx.scheduler.runAfter(0, internal.rewards.initializeDefaultRewardsInternal, { familyId });
+          console.log("ensureUser: Default rewards scheduled");
         }
 
         console.log("ensureUser: Returning existing user:", existingUser._id);
@@ -179,6 +187,10 @@ export const ensureUser = mutation({
         role: "owner",
         joinedAt: Date.now(),
       });
+
+      // Initialize default rewards
+      await ctx.scheduler.runAfter(0, internal.rewards.initializeDefaultRewardsInternal, { familyId });
+      console.log("ensureUser: Default rewards scheduled");
       console.log("ensureUser: Complete! Returning:", userId);
 
       return userId;
