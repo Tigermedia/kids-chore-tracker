@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-01-01
+
+### Added
+- Notification bell with dropdown showing unread notifications
+- Notification count badge on bell icon
+- Mark individual notifications as read
+- Mark all notifications as read
+- Extended avatar selection with 30+ emojis:
+  - Superhero emojis (🦸, 🦸‍♂️, 🦸‍♀️, 🦹, 🦹‍♂️, 🦹‍♀️, 🥷)
+  - Horse and additional animals (🐴, 🐯, 🐰, 🐨)
+  - Princess/prince and magical characters (👸, 🤴, 🧙, 🧚)
+
+### Changed
+- Child theme colors now apply to UI elements:
+  - Child selector buttons use child's theme color
+  - Points card has colored border matching theme
+  - Level progress bar uses child's theme color
+  - Tasks button uses child's theme color
+
 ## [1.0.0] - 2026-01-01
 
 ### Added

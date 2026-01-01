@@ -7,6 +7,7 @@ import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { APP_VERSION } from "../../lib/version";
+import { Id } from "../../../convex/_generated/dataModel";
 
 export default function DashboardLayout({
   children,
@@ -14,11 +15,25 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [userEnsured, setUserEnsured] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedChildId, setSelectedChildId] = useState<Id<"children"> | null>(null);
   const user = useQuery(api.users.getCurrentUser);
   const family = useQuery(api.users.getUserFamily);
   const children_list = useQuery(api.children.listByFamily);
   const pathname = usePathname();
   const ensureUser = useMutation(api.users.ensureUser);
+  const markAsRead = useMutation(api.notifications.markAsRead);
+  const markAllAsRead = useMutation(api.notifications.markAllAsRead);
+
+  // Get first child for notifications if none selected
+  const activeChildId = selectedChildId || children_list?.[0]?._id;
+
+  const unreadNotifications = useQuery(
+    api.notifications.getUnread,
+    activeChildId ? { childId: activeChildId } : "skip"
+  );
+
+  const unreadCount = unreadNotifications?.length ?? 0;
 
   // Ensure user and family exist (fallback if webhook didn't work)
   useEffect(() => {
@@ -55,11 +70,72 @@ export default function DashboardLayout({
 
           <div className="flex items-center gap-4">
             {/* Notification Bell */}
-            <button className="relative p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <span className="material-symbols-outlined text-gray-600">
-                notifications
-              </span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <span className="material-symbols-outlined text-gray-600">
+                  notifications
+                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notifications Dropdown */}
+              {showNotifications && (
+                <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border z-50 max-h-96 overflow-hidden">
+                  <div className="p-4 border-b flex items-center justify-between">
+                    <h3 className="font-bold">התראות</h3>
+                    {unreadCount > 0 && activeChildId && (
+                      <button
+                        onClick={() => markAllAsRead({ childId: activeChildId })}
+                        className="text-sm text-[#22d1c6] hover:underline"
+                      >
+                        סמן הכל כנקרא
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {unreadNotifications && unreadNotifications.length > 0 ? (
+                      unreadNotifications.map((notification) => (
+                        <div
+                          key={notification._id}
+                          className="p-4 border-b hover:bg-gray-50 cursor-pointer"
+                          onClick={() => markAsRead({ notificationId: notification._id })}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="text-2xl">
+                              {notification.type === "point_reduction" && "⚠️"}
+                              {notification.type === "achievement" && "🏆"}
+                              {notification.type === "level_up" && "⬆️"}
+                              {notification.type === "reward_available" && "🎁"}
+                              {notification.type === "challenge_complete" && "🎯"}
+                              {notification.type === "streak_reminder" && "🔥"}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{notification.title}</div>
+                              <div className="text-xs text-gray-500">{notification.message}</div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {new Date(notification.createdAt).toLocaleString("he-IL")}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center text-gray-500">
+                        <div className="text-4xl mb-2">🔔</div>
+                        <p>אין התראות חדשות</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Parent Mode Link */}
             <Link

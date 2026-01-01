@@ -46,8 +46,14 @@ export default function DashboardPage() {
   const createChild = useMutation(api.children.createChild);
 
   const avatars = [
-    "😊", "😎", "🤓", "🦄", "🐶", "🐱", "🦁", "🐻", "🐼", "🦊",
-    "🐸", "🦋", "🌟", "🚀", "⭐", "🎈", "🎨", "🎮",
+    // פרצופים
+    "😊", "😎", "🤓", "😁", "🥳",
+    // גיבורי על
+    "🦸", "🦸‍♂️", "🦸‍♀️", "🦹", "🦹‍♂️", "🦹‍♀️", "🥷",
+    // חיות
+    "🦄", "🐴", "🐶", "🐱", "🦁", "🐻", "🐼", "🦊", "🐸", "🦋", "🐯", "🐰", "🐨",
+    // אחר
+    "🌟", "🚀", "⭐", "🎈", "🎨", "🎮", "👸", "🤴", "🧙", "🧚",
   ];
 
   const themes = [
@@ -156,9 +162,14 @@ export default function DashboardPage() {
             onClick={() => setSelectedChildId(child._id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
               selectedChild?._id === child._id
-                ? "bg-[#22d1c6] text-white shadow-lg"
+                ? "text-white shadow-lg"
                 : "bg-white text-gray-700 hover:bg-gray-100"
             }`}
+            style={
+              selectedChild?._id === child._id
+                ? { backgroundColor: child.theme }
+                : undefined
+            }
           >
             <span className="text-xl">{child.avatar}</span>
             <span className="font-medium">{child.name}</span>
@@ -178,9 +189,12 @@ export default function DashboardPage() {
         <>
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
+            <div
+              className="bg-white rounded-2xl p-4 shadow-sm"
+              style={{ borderRight: `4px solid ${selectedChild.theme}` }}
+            >
               <div className="text-3xl mb-2">⭐</div>
-              <div className="text-2xl font-bold text-[#22d1c6]">
+              <div className="text-2xl font-bold" style={{ color: selectedChild.theme }}>
                 {selectedChild.totalPoints}
               </div>
               <div className="text-sm text-gray-500">נקודות</div>
@@ -224,8 +238,11 @@ export default function DashboardPage() {
             </div>
             <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[#22d1c6] to-[#a29bfe] transition-all duration-500"
-                style={{ width: `${xpProgress}%` }}
+                className="h-full transition-all duration-500"
+                style={{
+                  width: `${xpProgress}%`,
+                  background: `linear-gradient(to left, ${selectedChild.theme}, ${selectedChild.theme}88)`,
+                }}
               />
             </div>
             {level < LEVELS.length - 1 && (
@@ -240,7 +257,8 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-4">
             <a
               href="/dashboard/tasks"
-              className="bg-[#22d1c6] text-white rounded-2xl p-6 text-center hover:shadow-lg transition-all card-hover"
+              className="text-white rounded-2xl p-6 text-center hover:shadow-lg transition-all card-hover"
+              style={{ backgroundColor: selectedChild.theme }}
             >
               <span className="material-symbols-outlined text-4xl mb-2">
                 task_alt
