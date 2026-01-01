@@ -106,10 +106,10 @@ export const ensureUser = mutation({
 
     // Extract user info from identity (handle various property names)
     const clerkId = identity.subject;
-    const email = identity.email || identity.emailAddress || `${clerkId}@temp.local`;
-    const name = identity.name || identity.givenName || undefined;
+    const email = String(identity.email || identity.emailAddress || `${clerkId}@temp.local`);
+    const name = identity.name ? String(identity.name) : identity.givenName ? String(identity.givenName) : undefined;
     // Clerk uses pictureUrl in Convex identity
-    const imageUrl = identity.pictureUrl || undefined;
+    const imageUrl = identity.pictureUrl ? String(identity.pictureUrl) : undefined;
 
     console.log("[ensureUser] Clerk ID:", clerkId);
     console.log("[ensureUser] Email:", email);
