@@ -12,100 +12,157 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#4ecdc4] via-[#a29bfe] to-[#ff6b6b]">
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center">
-          <h1 className="text-6xl font-bold text-white mb-6 drop-shadow-lg">
-            כוכבים ⭐
+    <div className="bg-gradient-mesh min-h-screen flex flex-col items-center justify-center p-4 text-slate-800 relative overflow-hidden">
+      {/* Floating Emojis */}
+      <div className="absolute top-10 left-10 text-4xl opacity-40 blur-[1px] floating-emoji pointer-events-none">⭐</div>
+      <div className="absolute top-20 right-10 text-5xl opacity-30 blur-[1px] floating-emoji-delayed pointer-events-none">🎁</div>
+      <div className="absolute bottom-20 left-12 text-5xl opacity-30 blur-[1px] floating-emoji-delayed pointer-events-none">🏆</div>
+      <div className="absolute bottom-32 right-12 text-4xl opacity-40 blur-[1px] floating-emoji pointer-events-none">🚀</div>
+
+      <main className="w-full max-w-md z-10 space-y-6">
+        {/* Header */}
+        <header className="text-center space-y-2 mb-8">
+          <h1 className="text-5xl font-black text-white drop-shadow-md tracking-tight">
+            כוכבים
+            <span className="inline-block animate-pulse"> ✨</span>
           </h1>
-          <div className="text-xl text-white/90 mb-8 max-w-3xl mx-auto space-y-4">
-            <p className="text-2xl">
-              <span className="font-bold">לילדים:</span> משחק מהנה עם נקודות, רמות והישגים
-            </p>
-            <p className="text-2xl">
-              <span className="font-bold">להורים:</span> שגרה רגועה בלי מאבקים
-            </p>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mt-6">
-              <p className="font-bold text-xl mb-3">📚 להתפתחות הילד - מחקרים מוכיחים:</p>
-              <p className="text-white/80 text-lg">ילדים שעושים מטלות בבית מפתחים:</p>
-              <div className="grid grid-cols-2 gap-2 mt-3 text-right">
-                <div>✅ תחושת מסוגלות וביטחון עצמי</div>
-                <div>✅ אחריות ועצמאות</div>
-                <div>✅ יכולת ריכוז וזיכרון טובים יותר</div>
-                <div>✅ אמפתיה ומיומנויות חברתיות</div>
+          <p className="text-lg font-medium text-white/95 drop-shadow-sm px-4">
+            הופכים מטלות למשחק מהנה ומתגמל!
+          </p>
+        </header>
+
+        {/* Benefits Card */}
+        <div className="glass-panel bg-white/55 rounded-3xl p-6 shadow-lg space-y-5">
+          <h2 className="text-xl font-bold text-center text-orange-900 flex items-center justify-center gap-2 mb-2">
+            <span className="text-2xl">📚</span>
+            <span>להתפתחות הילד - מחקרים מוכיחים:</span>
+          </h2>
+
+          <div className="grid grid-cols-1 gap-3">
+            <div className="bg-white/60 p-3 rounded-2xl flex items-center gap-3 shadow-sm border border-white/40">
+              <div className="bg-green-100 p-2.5 rounded-full shrink-0">
+                <span className="material-symbols-outlined text-green-600 text-xl block">psychology</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-slate-900 text-base leading-tight">תחושת מסוגלות</h3>
+                <p className="text-sm text-slate-600">חיזוק הביטחון העצמי והאמונה ביכולות</p>
+              </div>
+            </div>
+
+            <div className="bg-white/60 p-3 rounded-2xl flex items-center gap-3 shadow-sm border border-white/40">
+              <div className="bg-blue-100 p-2.5 rounded-full shrink-0">
+                <span className="material-symbols-outlined text-blue-600 text-xl block">accessibility_new</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-slate-900 text-base leading-tight">אחריות ועצמאות</h3>
+                <p className="text-sm text-slate-600">פיתוח הרגלים אישיים בריאים לעתיד</p>
+              </div>
+            </div>
+
+            <div className="bg-white/60 p-3 rounded-2xl flex items-center gap-3 shadow-sm border border-white/40">
+              <div className="bg-purple-100 p-2.5 rounded-full shrink-0">
+                <span className="material-symbols-outlined text-purple-600 text-xl block">school</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-slate-900 text-base leading-tight">ריכוז וזיכרון</h3>
+                <p className="text-sm text-slate-600">שיפור יכולות קוגניטיביות דרך משחק</p>
+              </div>
+            </div>
+
+            <div className="bg-white/60 p-3 rounded-2xl flex items-center gap-3 shadow-sm border border-white/40">
+              <div className="bg-rose-100 p-2.5 rounded-full shrink-0">
+                <span className="material-symbols-outlined text-rose-600 text-xl block">favorite</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-slate-900 text-base leading-tight">מיומנויות חברתיות</h3>
+                <p className="text-sm text-slate-600">פיתוח אמפתיה והבנת הזולת</p>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Link
-              href="/sign-up"
-              className="bg-white text-[#4ecdc4] px-8 py-4 rounded-full text-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
-            >
-              התחל עכשיו - חינם! 🚀
-            </Link>
-            <Link
-              href="/sign-in"
-              className="bg-white/20 text-white px-8 py-4 rounded-full text-xl font-bold backdrop-blur-sm hover:bg-white/30 transition-all"
-            >
-              התחברות
-            </Link>
+        {/* CTA Buttons */}
+        <div className="space-y-4 pt-2">
+          <Link
+            href="/sign-up"
+            className="w-full bg-white text-orange-500 hover:bg-orange-50 transition-all transform hover:scale-[1.02] shadow-lg rounded-full py-4 px-6 text-xl font-bold flex items-center justify-center gap-3 group"
+          >
+            <span className="text-2xl group-hover:animate-bounce">🚀</span>
+            <span>התחל עכשיו - חינם!</span>
+          </Link>
+
+          <Link
+            href="/sign-in"
+            className="w-full bg-white/30 backdrop-blur-sm text-white hover:bg-white/40 transition-colors rounded-full py-3 px-6 text-lg font-semibold shadow-sm border border-white/20 block text-center"
+          >
+            התחברות
+          </Link>
+        </div>
+
+        {/* Feature Cards */}
+        <div className="grid grid-cols-1 gap-4 mt-6">
+          <div className="glass-panel bg-white/25 rounded-2xl p-4 flex items-center gap-4 hover:bg-white/40 transition-colors">
+            <div className="bg-green-100 p-3 rounded-xl shadow-sm">
+              <span className="text-3xl">✅</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900">משימות יומיות</h3>
+              <p className="text-xs text-slate-700">משימות בוקר וערב מותאמות אישית לכל ילד</p>
+            </div>
+          </div>
+
+          <div className="glass-panel bg-white/25 rounded-2xl p-4 flex items-center gap-4 hover:bg-white/40 transition-colors">
+            <div className="bg-yellow-100 p-3 rounded-xl shadow-sm">
+              <span className="text-3xl">🏆</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900">הישגים ורמות</h3>
+              <p className="text-xs text-slate-700">10 רמות התקדמות עם הישגים מיוחדים לפתיחה</p>
+            </div>
+          </div>
+
+          <div className="glass-panel bg-white/25 rounded-2xl p-4 flex items-center gap-4 hover:bg-white/40 transition-colors">
+            <div className="bg-red-100 p-3 rounded-xl shadow-sm">
+              <span className="text-3xl">🎁</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900">חנות פרסים</h3>
+              <p className="text-xs text-slate-700">הילדים קונים פרסים עם הנקודות שצברו</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="glass-panel bg-white/25 rounded-2xl p-4 flex flex-col items-center text-center gap-2 hover:bg-white/40 transition-colors">
+              <div className="bg-orange-100 p-2 rounded-xl shadow-sm inline-block">
+                <span className="text-2xl">👨‍👩‍👧‍👦</span>
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">ניהול משפחתי</h3>
+                <p className="text-[10px] text-slate-700 leading-tight mt-1">תמיכה במספר ילדים, אישור הורי למשימות</p>
+              </div>
+            </div>
+
+            <div className="glass-panel bg-white/25 rounded-2xl p-4 flex flex-col items-center text-center gap-2 hover:bg-white/40 transition-colors">
+              <div className="bg-rose-100 p-2 rounded-xl shadow-sm inline-block">
+                <span className="text-2xl">📊</span>
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">דוחות ומעקב</h3>
+                <p className="text-xs text-slate-700 leading-tight mt-1">צפייה בהתקדמות יומית, שבועית וחודשית</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Features */}
-        <div className="grid md:grid-cols-3 gap-8 mt-20">
-          <div className="bg-white/20 backdrop-blur-sm rounded-3xl p-8 text-center text-white">
-            <div className="text-5xl mb-4">✅</div>
-            <h3 className="text-2xl font-bold mb-2">משימות יומיות</h3>
-            <p className="text-white/80">
-              משימות בוקר וערב מותאמות אישית לכל ילד
-            </p>
-          </div>
-
-          <div className="bg-white/20 backdrop-blur-sm rounded-3xl p-8 text-center text-white">
-            <div className="text-5xl mb-4">🏆</div>
-            <h3 className="text-2xl font-bold mb-2">הישגים ורמות</h3>
-            <p className="text-white/80">
-              10 רמות התקדמות עם הישגים מיוחדים לפתיחה
-            </p>
-          </div>
-
-          <div className="bg-white/20 backdrop-blur-sm rounded-3xl p-8 text-center text-white">
-            <div className="text-5xl mb-4">🎁</div>
-            <h3 className="text-2xl font-bold mb-2">חנות פרסים</h3>
-            <p className="text-white/80">
-              הילדים קונים פרסים עם הנקודות שצברו
-            </p>
-          </div>
-        </div>
-
-        {/* More Features */}
-        <div className="grid md:grid-cols-2 gap-8 mt-12">
-          <div className="bg-white/20 backdrop-blur-sm rounded-3xl p-8 text-white">
-            <div className="text-4xl mb-4">👨‍👩‍👧‍👦</div>
-            <h3 className="text-2xl font-bold mb-2">ניהול משפחתי</h3>
-            <p className="text-white/80">
-              תמיכה במספר ילדים, אישור הורי למשימות, והתראות בזמן אמת
-            </p>
-          </div>
-
-          <div className="bg-white/20 backdrop-blur-sm rounded-3xl p-8 text-white">
-            <div className="text-4xl mb-4">📊</div>
-            <h3 className="text-2xl font-bold mb-2">דוחות ומעקב</h3>
-            <p className="text-white/80">
-              צפייה בהתקדמות יומית, שבועית וחודשית עם גרפים צבעוניים
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="text-center py-8 text-white/60">
-        <p>נבנה באהבה למשפחות ישראליות 💜</p>
-        <p className="text-sm mt-2">v{APP_VERSION}</p>
-      </footer>
+        {/* Footer */}
+        <footer className="text-center pt-8 pb-4">
+          <p className="text-white/80 text-xs flex items-center justify-center gap-1">
+            <span className="material-symbols-outlined text-sm">favorite</span>
+            נבנה באהבה למשפחות ישראליות
+          </p>
+          <p className="text-white/60 text-xs mt-1">v{APP_VERSION}</p>
+        </footer>
+      </main>
     </div>
   );
 }
