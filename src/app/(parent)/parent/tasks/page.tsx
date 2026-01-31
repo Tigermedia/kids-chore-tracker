@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -24,6 +24,7 @@ export default function ParentTasksPage() {
     points: number;
     timeOfDay: TimeOfDay;
   } | null>(null);
+  const [deletingTaskId, setDeletingTaskId] = useState<Id<"taskTemplates"> | null>(null);
 
   const selectedChild =
     selectedChildId && children
@@ -95,11 +96,16 @@ export default function ParentTasksPage() {
     setEditingTask(null);
   };
 
-  const handleDeleteTask = async (templateId: Id<"taskTemplates">) => {
-    if (confirm("האם אתה בטוח שברצונך למחוק משימה זו?")) {
-      await deleteTemplate({ templateId });
+  const handleDeleteTask = useCallback((templateId: Id<"taskTemplates">) => {
+    setDeletingTaskId(templateId);
+  }, []);
+
+  const confirmDeleteTask = useCallback(async () => {
+    if (deletingTaskId) {
+      await deleteTemplate({ templateId: deletingTaskId });
+      setDeletingTaskId(null);
     }
-  };
+  }, [deletingTaskId, deleteTemplate]);
 
   return (
     <div className="space-y-6">
@@ -182,6 +188,33 @@ export default function ParentTasksPage() {
             setEditingTask(null);
           }}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingTaskId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl text-center">
+            <div className="text-5xl mb-4">🗑️</div>
+            <h2 className="text-xl font-bold mb-2">מחיקת משימה</h2>
+            <p className="text-gray-600 mb-6">
+              האם אתה בטוח שברצונך למחוק משימה זו? פעולה זו לא ניתנת לביטול.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingTaskId(null)}
+                className="flex-1 px-4 py-3 border rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                ביטול
+              </button>
+              <button
+                onClick={confirmDeleteTask}
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium"
+              >
+                מחק
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
