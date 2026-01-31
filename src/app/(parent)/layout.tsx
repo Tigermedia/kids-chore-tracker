@@ -142,6 +142,7 @@ export default function ParentLayout({
             <Link href="/parent" className="text-2xl font-bold">
               מצב הורה 👨‍👩‍👧‍👦
             </Link>
+            <span className="text-[10px] text-white/50 font-mono">v{APP_VERSION}</span>
           </div>
 
           <div className="flex items-center gap-4">

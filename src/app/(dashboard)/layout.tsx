@@ -66,6 +66,7 @@ export default function DashboardLayout({
             <Link href="/dashboard" className="text-2xl font-bold text-[#22d1c6]">
               כוכבים ⭐
             </Link>
+            <span className="text-[10px] text-gray-400 font-mono">v{APP_VERSION}</span>
             {family && (
               <span className="text-gray-500 text-sm hidden md:block">
                 {family.name}
