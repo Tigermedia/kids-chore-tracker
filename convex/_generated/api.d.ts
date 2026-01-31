@@ -9,8 +9,11 @@
  */
 
 import type * as achievements from "../achievements.js";
+import type * as challenges from "../challenges.js";
 import type * as children from "../children.js";
+import type * as dailyRewards from "../dailyRewards.js";
 import type * as families from "../families.js";
+import type * as lib from "../lib.js";
 import type * as notifications from "../notifications.js";
 import type * as pointReductions from "../pointReductions.js";
 import type * as rewards from "../rewards.js";
@@ -25,8 +28,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   achievements: typeof achievements;
+  challenges: typeof challenges;
   children: typeof children;
+  dailyRewards: typeof dailyRewards;
   families: typeof families;
+  lib: typeof lib;
   notifications: typeof notifications;
   pointReductions: typeof pointReductions;
   rewards: typeof rewards;
