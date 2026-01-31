@@ -202,16 +202,8 @@ export const ensureUser = mutation({
   },
 });
 
-// Get user by Clerk ID
-export const getUserByClerkId = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
-  },
-});
+// NOTE: getUserByClerkId was removed as dead code.
+// Use getCurrentUser instead (which gets clerkId from auth identity).
 
 // Get user's family
 export const getUserFamily = query({

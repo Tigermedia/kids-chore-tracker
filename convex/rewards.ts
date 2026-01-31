@@ -298,27 +298,6 @@ export const redeem = mutation({
   },
 });
 
-// Initialize default rewards for a family
-export const initializeDefaultRewards = mutation({
-  args: { familyId: v.id("families") },
-  handler: async (ctx, args) => {
-    const defaultRewards = [
-      { name: "30 דקות טלוויזיה", icon: "📺", description: "30 דקות צפייה בטלוויזיה", cost: 50 },
-      { name: "גלידה", icon: "🍦", description: "גלידה לבחירתך", cost: 75 },
-      { name: "משחק מחשב", icon: "🎮", description: "30 דקות משחקי מחשב", cost: 60 },
-      { name: "לילה להישאר ער", icon: "🌙", description: "להישאר ער חצי שעה יותר", cost: 100 },
-      { name: "מתנה קטנה", icon: "🎁", description: "מתנה הפתעה קטנה", cost: 200 },
-      { name: "יום בילוי", icon: "🎢", description: "יום כיף לבחירתך", cost: 500 },
-    ];
-
-    for (const reward of defaultRewards) {
-      await ctx.db.insert("rewards", {
-        familyId: args.familyId,
-        ...reward,
-        isActive: true,
-        isDefault: true,
-        createdAt: Date.now(),
-      });
-    }
-  },
-});
+// NOTE: Public initializeDefaultRewards was removed as dead code.
+// Use the internal version (initializeDefaultRewardsInternal) which is called
+// from users.createUser and users.ensureUser via ctx.scheduler.
