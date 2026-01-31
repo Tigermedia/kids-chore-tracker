@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { verifyChildAccess, getAuthenticatedFamily } from "./lib";
 
 // Get today's date in YYYY-MM-DD format
 function getTodayDate(): string {
@@ -7,10 +9,19 @@ function getTodayDate(): string {
   return now.toISOString().split("T")[0];
 }
 
-// Get task templates for a child
+// Get yesterday's date in YYYY-MM-DD format
+function getYesterdayDate(): string {
+  const now = new Date();
+  now.setDate(now.getDate() - 1);
+  return now.toISOString().split("T")[0];
+}
+
+// Get task templates for a child (with family ownership verification)
 export const getTemplates = query({
   args: { childId: v.id("children") },
   handler: async (ctx, args) => {
+    await verifyChildAccess(ctx, args.childId);
+
     const templates = await ctx.db
       .query("taskTemplates")
       .withIndex("by_childId", (q) => q.eq("childId", args.childId))
@@ -21,7 +32,7 @@ export const getTemplates = query({
   },
 });
 
-// Get task templates by time of day
+// Get task templates by time of day (with family ownership verification)
 export const getTemplatesByTimeOfDay = query({
   args: {
     childId: v.id("children"),
@@ -32,6 +43,8 @@ export const getTemplatesByTimeOfDay = query({
     ),
   },
   handler: async (ctx, args) => {
+    await verifyChildAccess(ctx, args.childId);
+
     const templates = await ctx.db
       .query("taskTemplates")
       .withIndex("by_childId_timeOfDay", (q) =>
@@ -44,10 +57,12 @@ export const getTemplatesByTimeOfDay = query({
   },
 });
 
-// Get today's tasks with completion status
+// Get today's tasks with completion status (with family ownership verification)
 export const getTodayTasks = query({
   args: { childId: v.id("children") },
   handler: async (ctx, args) => {
+    await verifyChildAccess(ctx, args.childId);
+
     const today = getTodayDate();
 
     // Get all active templates for this child
@@ -82,7 +97,7 @@ export const getTodayTasks = query({
   },
 });
 
-// Complete a task
+// Complete a task (with family ownership verification + streak logic + achievement check)
 export const completeTask = mutation({
   args: {
     childId: v.id("children"),
@@ -90,6 +105,8 @@ export const completeTask = mutation({
     photoStorageId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
+    const { child } = await verifyChildAccess(ctx, args.childId);
+
     const today = getTodayDate();
 
     // Check if already completed today
@@ -121,21 +138,57 @@ export const completeTask = mutation({
       photoStorageId: args.photoStorageId,
     });
 
-    // Update child stats
-    const child = await ctx.db.get(args.childId);
-    if (child) {
-      await ctx.db.patch(args.childId, {
-        totalPoints: child.totalPoints + template.points,
-        xp: child.xp + template.points,
-        totalTasksCompleted: child.totalTasksCompleted + 1,
-      });
+    // --- Streak logic ---
+    // Check if this is the first completion today (before we created ours, there were none)
+    const existingTodayCompletion = await ctx.db
+      .query("taskCompletions")
+      .withIndex("by_childId_date", (q) =>
+        q.eq("childId", args.childId).eq("date", today)
+      )
+      .filter((q) => q.neq(q.field("_id"), completionId))
+      .first();
+
+    let newStreak = child.currentStreak;
+    if (!existingTodayCompletion) {
+      // This is the first completion today — update streak
+      const yesterday = getYesterdayDate();
+      const yesterdayCompletion = await ctx.db
+        .query("taskCompletions")
+        .withIndex("by_childId_date", (q) =>
+          q.eq("childId", args.childId).eq("date", yesterday)
+        )
+        .first();
+
+      if (yesterdayCompletion) {
+        // Continuing streak from yesterday
+        newStreak = child.currentStreak + 1;
+      } else {
+        // No activity yesterday — start new streak
+        newStreak = 1;
+      }
     }
+
+    // Update child stats (points, XP, tasks completed, streak)
+    await ctx.db.patch(args.childId, {
+      totalPoints: child.totalPoints + template.points,
+      xp: child.xp + template.points,
+      totalTasksCompleted: child.totalTasksCompleted + 1,
+      currentStreak: newStreak,
+      longestStreak: Math.max(newStreak, child.longestStreak),
+    });
+
+    // --- Achievement auto-check ---
+    await ctx.scheduler.runAfter(
+      0,
+      internal.achievements.checkAndUnlockInternal,
+      { childId: args.childId }
+    );
 
     return completionId;
   },
 });
 
-// Uncomplete a task (undo)
+// Uncomplete a task (undo) (with family ownership verification)
 export const uncompleteTask = mutation({
   args: {
     completionId: v.id("taskCompletions"),
@@ -145,6 +198,9 @@ export const uncompleteTask = mutation({
     if (!completion) {
       throw new Error("Completion not found");
     }
+
+    // Verify family access via the child
+    await verifyChildAccess(ctx, completion.childId);
 
     // Update child stats
     const child = await ctx.db.get(completion.childId);
@@ -161,7 +217,7 @@ export const uncompleteTask = mutation({
   },
 });
 
-// Create a task template
+// Create a task template (with family ownership verification)
 export const createTemplate = mutation({
   args: {
     childId: v.id("children"),
@@ -178,6 +234,8 @@ export const createTemplate = mutation({
     requiresPhoto: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await verifyChildAccess(ctx, args.childId);
+
     const templateId = await ctx.db.insert("taskTemplates", {
       childId: args.childId,
       name: args.name,
@@ -196,7 +254,7 @@ export const createTemplate = mutation({
   },
 });
 
-// Update a task template
+// Update a task template (with family ownership verification)
 export const updateTemplate = mutation({
   args: {
     templateId: v.id("taskTemplates"),
@@ -213,6 +271,13 @@ export const updateTemplate = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    // Get the template to find the childId for verification
+    const template = await ctx.db.get(args.templateId);
+    if (!template) {
+      throw new Error("Task template not found");
+    }
+    await verifyChildAccess(ctx, template.childId);
+
     const { templateId, ...updates } = args;
 
     const filteredUpdates = Object.fromEntries(
@@ -224,10 +289,17 @@ export const updateTemplate = mutation({
   },
 });
 
-// Delete a task template
+// Delete a task template (with family ownership verification)
 export const deleteTemplate = mutation({
   args: { templateId: v.id("taskTemplates") },
   handler: async (ctx, args) => {
+    // Get the template to find the childId for verification
+    const template = await ctx.db.get(args.templateId);
+    if (!template) {
+      throw new Error("Task template not found");
+    }
+    await verifyChildAccess(ctx, template.childId);
+
     // Delete all completions for this template
     const completions = await ctx.db
       .query("taskCompletions")
@@ -244,13 +316,15 @@ export const deleteTemplate = mutation({
   },
 });
 
-// Get task completion history
+// Get task completion history (with family ownership verification)
 export const getCompletionHistory = query({
   args: {
     childId: v.id("children"),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await verifyChildAccess(ctx, args.childId);
+
     const completions = await ctx.db
       .query("taskCompletions")
       .withIndex("by_childId", (q) => q.eq("childId", args.childId))

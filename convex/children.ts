@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { verifyChildAccess, getAuthenticatedFamily } from "./lib";
 
 // List all children in the user's family
 export const listByFamily = query({
@@ -36,11 +37,12 @@ export const listByFamily = query({
   },
 });
 
-// Get a specific child
+// Get a specific child (with family ownership verification)
 export const getChild = query({
   args: { childId: v.id("children") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.childId);
+    const { child } = await verifyChildAccess(ctx, args.childId);
+    return child;
   },
 });
 
@@ -138,7 +140,7 @@ export const createChild = mutation({
   },
 });
 
-// Update a child
+// Update a child (with family ownership verification)
 export const updateChild = mutation({
   args: {
     childId: v.id("children"),
@@ -147,6 +149,8 @@ export const updateChild = mutation({
     theme: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await verifyChildAccess(ctx, args.childId);
+
     const { childId, ...updates } = args;
 
     // Filter out undefined values
@@ -159,10 +163,12 @@ export const updateChild = mutation({
   },
 });
 
-// Delete a child
+// Delete a child (with family ownership verification)
 export const deleteChild = mutation({
   args: { childId: v.id("children") },
   handler: async (ctx, args) => {
+    await verifyChildAccess(ctx, args.childId);
+
     // Delete related data
     const tasks = await ctx.db
       .query("taskTemplates")
@@ -205,40 +211,5 @@ export const deleteChild = mutation({
   },
 });
 
-// Add XP to a child
-export const addXP = mutation({
-  args: {
-    childId: v.id("children"),
-    amount: v.number(),
-  },
-  handler: async (ctx, args) => {
-    const child = await ctx.db.get(args.childId);
-    if (!child) {
-      throw new Error("Child not found");
-    }
-
-    const newXP = child.xp + args.amount;
-    await ctx.db.patch(args.childId, { xp: newXP });
-
-    return newXP;
-  },
-});
-
-// Add points to a child
-export const addPoints = mutation({
-  args: {
-    childId: v.id("children"),
-    amount: v.number(),
-  },
-  handler: async (ctx, args) => {
-    const child = await ctx.db.get(args.childId);
-    if (!child) {
-      throw new Error("Child not found");
-    }
-
-    const newPoints = child.totalPoints + args.amount;
-    await ctx.db.patch(args.childId, { totalPoints: newPoints });
-
-    return newPoints;
-  },
-});
+// NOTE: addXP and addPoints were removed as dead code.
+// XP and points are updated directly in tasks.completeTask.
