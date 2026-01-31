@@ -88,17 +88,47 @@ export function PinModal({ mode, onSuccess, onCancel }: PinModalProps) {
 
   // Auto-submit when 4 digits entered in verify mode
   useEffect(() => {
-    if (mode === "verify" && pin.length === 4) {
-      handleSubmit();
-    }
-  }, [pin, mode]);
+    if (mode !== "verify" || pin.length !== 4 || isLoading) return;
+    const doVerify = async () => {
+      setIsLoading(true);
+      try {
+        const isValid = await verifyParentPin({ pin });
+        if (isValid) {
+          onSuccess();
+        } else {
+          setError("קוד שגוי");
+          setPin("");
+        }
+      } catch {
+        setError("שגיאה באימות הקוד");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    doVerify();
+  }, [pin, mode, isLoading, verifyParentPin, onSuccess]);
 
   // Auto-submit when confirm PIN is 4 digits in setup mode
   useEffect(() => {
-    if (mode === "setup" && step === "confirm" && confirmPin.length === 4) {
-      handleSubmit();
+    if (mode !== "setup" || step !== "confirm" || confirmPin.length !== 4 || isLoading) return;
+    if (confirmPin !== pin) {
+      setError("הקודים לא תואמים");
+      setConfirmPin("");
+      return;
     }
-  }, [confirmPin, mode, step]);
+    const doSetup = async () => {
+      setIsLoading(true);
+      try {
+        await setParentPin({ pin });
+        onSuccess();
+      } catch {
+        setError("שגיאה בשמירת הקוד");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    doSetup();
+  }, [confirmPin, mode, step, pin, isLoading, setParentPin, onSuccess]);
 
   const currentPin = step === "confirm" ? confirmPin : pin;
 

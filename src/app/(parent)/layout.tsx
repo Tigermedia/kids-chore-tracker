@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { APP_VERSION } from "../../lib/version";
 import { PinModal } from "../../components/pin/PinModal";
@@ -18,10 +18,22 @@ export default function ParentLayout({
 }) {
   const pathname = usePathname();
   const hasPin = useQuery(api.families.hasParentPin);
+  const ensureUser = useMutation(api.users.ensureUser);
+  const userEnsured = useRef(false);
 
   const [isVerified, setIsVerified] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  // Ensure user exists in Convex (same as dashboard layout)
+  useEffect(() => {
+    if (hasPin !== undefined && !userEnsured.current) {
+      userEnsured.current = true;
+      ensureUser().catch(() => {
+        // User might already exist, ignore errors
+      });
+    }
+  }, [hasPin, ensureUser]);
 
   // Check if session is still valid (within 15 min timeout)
   const checkSession = useCallback(() => {
@@ -90,16 +102,16 @@ export default function ParentLayout({
     return () => clearInterval(interval);
   }, [isVerified, checkSession]);
 
-  const handlePinSuccess = () => {
+  const handlePinSuccess = useCallback(() => {
     updateActivity();
     setIsVerified(true);
     setShowPinModal(false);
-  };
+  }, [updateActivity]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     // Redirect back to dashboard if they cancel
     window.location.href = "/dashboard";
-  };
+  }, []);
 
   const navItems = [
     { href: "/parent", label: "סקירה כללית", icon: "dashboard" },
