@@ -44,6 +44,18 @@ export default function ParentTasksPage() {
   const eveningTasks = tasks?.filter((t) => t.timeOfDay === "evening") ?? [];
   const specialTasks = tasks?.filter((t) => t.timeOfDay === "special") ?? [];
 
+  // All hooks must be called before any early returns (Rules of Hooks)
+  const handleDeleteTask = useCallback((templateId: Id<"taskTemplates">) => {
+    setDeletingTaskId(templateId);
+  }, []);
+
+  const confirmDeleteTask = useCallback(async () => {
+    if (deletingTaskId) {
+      await deleteTemplate({ templateId: deletingTaskId });
+      setDeletingTaskId(null);
+    }
+  }, [deletingTaskId, deleteTemplate]);
+
   if (!children) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -95,17 +107,6 @@ export default function ParentTasksPage() {
     });
     setEditingTask(null);
   };
-
-  const handleDeleteTask = useCallback((templateId: Id<"taskTemplates">) => {
-    setDeletingTaskId(templateId);
-  }, []);
-
-  const confirmDeleteTask = useCallback(async () => {
-    if (deletingTaskId) {
-      await deleteTemplate({ templateId: deletingTaskId });
-      setDeletingTaskId(null);
-    }
-  }, [deletingTaskId, deleteTemplate]);
 
   return (
     <div className="space-y-6">
