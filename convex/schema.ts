@@ -147,12 +147,23 @@ export default defineSchema({
     .index("by_childId", ["childId"])
     .index("by_childId_weekStart", ["childId", "weekStart"]),
 
-  // Daily Login Rewards
+  // Daily Login Rewards (tracker - one per child)
   dailyRewards: defineTable({
     childId: v.id("children"),
     lastClaimDate: v.string(), // YYYY-MM-DD
     streak: v.number(),
   }).index("by_childId", ["childId"]),
+
+  // Daily Reward Claims (history of individual claims)
+  dailyRewardClaims: defineTable({
+    childId: v.id("children"),
+    date: v.string(), // YYYY-MM-DD
+    pointsAwarded: v.number(),
+    isJackpot: v.boolean(),
+    claimedAt: v.number(),
+  })
+    .index("by_childId", ["childId"])
+    .index("by_childId_date", ["childId", "date"]),
 
   // Point Reductions (Parent penalty system)
   pointReductions: defineTable({

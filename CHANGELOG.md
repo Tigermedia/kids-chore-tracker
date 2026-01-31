@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-01-13
+
+### Added
+
+- **Weekly Challenges (אתגרים שבועיים)**: Rotating weekly challenges for each child
+  - 5 challenge types: morning tasks, consecutive days, weekly points, evening completions, total tasks
+  - Auto-initializes on dashboard load, rotates to avoid repeating recent types
+  - Progress bar with live computation from actual task completions
+  - Claim button with celebration animation when challenge is met
+  - Shimmer effect on completable challenges, green checkmark when claimed
+  - Backend: `convex/challenges.ts` with `getActiveChallenge`, `getChallengeProgress`, `initializeWeeklyChallenge`, `claimChallengeReward`
+- **Daily Reward / Daily Spin (פרס יומי)**: Daily reward system with spin animation
+  - Random 1-10 points per claim, with 5% chance of 25-point jackpot
+  - Bouncing/glowing gift icon when unclaimed
+  - Spin/reveal animation with number cycling effect
+  - Confetti celebration on claiming
+  - Countdown timer to midnight when already claimed
+  - Daily streak tracking across consecutive days
+  - Backend: `convex/dailyRewards.ts` with `getDailyReward`, `claimDailyReward`, `getDailyRewardHistory`
+- **Database**: Added `dailyRewardClaims` table for reward claim history
+- **Components**: `WeeklyChallengeCard` and `DailyRewardCard` dashboard components
+
 ## [1.1.3] - 2026-01-02
 
 ### Changed

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
+import { DailyRewardCard } from "../../../components/dashboard/DailyRewardCard";
+import { WeeklyChallengeCard } from "../../../components/dashboard/WeeklyChallengeCard";
 
 // Level definitions
 const LEVELS = [
@@ -42,6 +44,10 @@ export default function DashboardPage() {
     null
   );
 
+  const initWeeklyChallenge = useMutation(
+    api.challenges.initializeWeeklyChallenge
+  );
+
   const selectedChild =
     selectedChildId && children
       ? children.find((c) => c._id === selectedChildId)
@@ -53,6 +59,15 @@ export default function DashboardPage() {
       router.push("/parent/children");
     }
   }, [children, router]);
+
+  // Auto-initialize weekly challenge when child is selected
+  useEffect(() => {
+    if (selectedChild) {
+      initWeeklyChallenge({ childId: selectedChild._id }).catch(() => {
+        // Ignore errors - challenge may already exist
+      });
+    }
+  }, [selectedChild?._id, initWeeklyChallenge]);
 
   if (!children) {
     return (
@@ -109,6 +124,18 @@ export default function DashboardPage() {
 
       {selectedChild && (
         <>
+          {/* Daily Reward */}
+          <DailyRewardCard
+            childId={selectedChild._id}
+            theme={selectedChild.theme}
+          />
+
+          {/* Weekly Challenge */}
+          <WeeklyChallengeCard
+            childId={selectedChild._id}
+            theme={selectedChild.theme}
+          />
+
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div
