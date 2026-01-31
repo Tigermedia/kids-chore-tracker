@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 
 // Achievement definitions
 export const ACHIEVEMENT_DEFINITIONS = [
@@ -52,27 +52,7 @@ export const getByChild = query({
   },
 });
 
-// Get only unlocked achievements
-export const getUnlocked = query({
-  args: { childId: v.id("children") },
-  handler: async (ctx, args) => {
-    const achievements = await ctx.db
-      .query("achievements")
-      .withIndex("by_childId", (q) => q.eq("childId", args.childId))
-      .collect();
-
-    return achievements.map((a) => {
-      const def = ACHIEVEMENT_DEFINITIONS.find((d) => d.id === a.achievementId);
-      return {
-        ...a,
-        name: def?.name ?? "Unknown",
-        icon: def?.icon ?? "🏅",
-        description: def?.description ?? "",
-        category: def?.category ?? "special",
-      };
-    });
-  },
-});
+// NOTE: getUnlocked was removed as dead code. Use getByChild instead.
 
 // Unlock an achievement
 export const unlock = mutation({
@@ -242,6 +222,77 @@ export const checkAndUnlock = mutation({
           type: "achievement",
           title: "הישג חדש!",
           message: `${def.icon} ${def.name}`,
+          isRead: false,
+          createdAt: Date.now(),
+        });
+      }
+    }
+
+    return unlocked;
+  },
+});
+
+// Internal version of checkAndUnlock (called from completeTask via scheduler)
+export const checkAndUnlockInternal = internalMutation({
+  args: { childId: v.id("children") },
+  handler: async (ctx, args) => {
+    const child = await ctx.db.get(args.childId);
+    if (!child) {
+      return [];
+    }
+
+    const unlocked: string[] = [];
+
+    // Helper to check and unlock a single achievement
+    const tryUnlock = async (achievementId: string) => {
+      const existing = await ctx.db
+        .query("achievements")
+        .withIndex("by_childId_achievementId", (q) =>
+          q.eq("childId", args.childId).eq("achievementId", achievementId)
+        )
+        .unique();
+      if (!existing) {
+        await ctx.db.insert("achievements", {
+          childId: args.childId,
+          achievementId,
+          unlockedAt: Date.now(),
+        });
+        unlocked.push(achievementId);
+      }
+    };
+
+    // Task milestones
+    if (child.totalTasksCompleted >= 1) await tryUnlock("first_task");
+    if (child.totalTasksCompleted >= 10) await tryUnlock("tasks_10");
+    if (child.totalTasksCompleted >= 50) await tryUnlock("tasks_50");
+    if (child.totalTasksCompleted >= 100) await tryUnlock("tasks_100");
+    if (child.totalTasksCompleted >= 500) await tryUnlock("tasks_500");
+
+    // Streak achievements
+    if (child.currentStreak >= 3) await tryUnlock("streak_3");
+    if (child.currentStreak >= 7) await tryUnlock("streak_7");
+    if (child.currentStreak >= 14) await tryUnlock("streak_14");
+    if (child.currentStreak >= 30) await tryUnlock("streak_30");
+
+    // Points achievements
+    if (child.totalPoints >= 100) await tryUnlock("points_100");
+    if (child.totalPoints >= 500) await tryUnlock("points_500");
+    if (child.totalPoints >= 1000) await tryUnlock("points_1000");
+
+    // Level achievements (XP-based: 100 XP per level)
+    const level = Math.floor(child.xp / 100) + 1;
+    if (level >= 5) await tryUnlock("level_5");
+    if (level >= 10) await tryUnlock("level_10");
+
+    // Create notifications for new achievements
+    for (const achievementId of unlocked) {
+      const def = ACHIEVEMENT_DEFINITIONS.find((d) => d.id === achievementId);
+      if (def) {
+        await ctx.db.insert("notifications", {
+          childId: args.childId,
+          type: "achievement",
+          title: "הישג חדש!",
+          message: `${def.icon} ${def.name}: ${def.description}`,
           isRead: false,
           createdAt: Date.now(),
         });
