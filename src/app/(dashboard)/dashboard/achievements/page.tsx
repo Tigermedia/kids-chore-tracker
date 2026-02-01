@@ -3,19 +3,11 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { Id } from "../../../../../convex/_generated/dataModel";
+import { useChild } from "../../../../contexts/ChildContext";
 
 export default function AchievementsPage() {
-  const children = useQuery(api.children.listByFamily);
-  const [selectedChildId, setSelectedChildId] = useState<Id<"children"> | null>(
-    null
-  );
+  const { selectedChild, children, isLoading } = useChild();
   const [filter, setFilter] = useState<"all" | "unlocked" | "locked">("all");
-
-  const selectedChild =
-    selectedChildId && children
-      ? children.find((c) => c._id === selectedChildId)
-      : children?.[0];
 
   const achievements = useQuery(
     api.achievements.getByChild,
@@ -27,7 +19,7 @@ export default function AchievementsPage() {
     selectedChild ? { childId: selectedChild._id } : "skip"
   );
 
-  if (!children) {
+  if (isLoading || !children) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#a29bfe]"></div>
@@ -51,6 +43,10 @@ export default function AchievementsPage() {
     );
   }
 
+  if (!selectedChild) {
+    return null;
+  }
+
   const filteredAchievements = achievements?.filter((a) => {
     if (filter === "unlocked") return a.isUnlocked;
     if (filter === "locked") return !a.isUnlocked;
@@ -68,140 +64,118 @@ export default function AchievementsPage() {
 
   return (
     <div className="space-y-6 pb-20 md:pb-6">
-      {/* Child Selector */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-2">
-        {children.map((child) => (
-          <button
-            key={child._id}
-            onClick={() => setSelectedChildId(child._id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-              selectedChild?._id === child._id
-                ? "bg-[#a29bfe] text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <span className="text-xl">{child.avatar}</span>
-            <span className="font-medium">{child.name}</span>
-          </button>
-        ))}
+      {/* Progress Header */}
+      <div className="bg-gradient-to-r from-[#a29bfe] to-[#6c5ce7] rounded-2xl p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm opacity-80">הישגים שנפתחו</div>
+            <div className="text-4xl font-bold">
+              {achievementCount?.unlocked ?? 0}/{achievementCount?.total ?? 0}
+            </div>
+          </div>
+          <div className="text-6xl">🏆</div>
+        </div>
+        <div className="mt-4 h-3 bg-white/20 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-white transition-all duration-500"
+            style={{
+              width: `${
+                achievementCount
+                  ? (achievementCount.unlocked / achievementCount.total) * 100
+                  : 0
+              }%`,
+            }}
+          />
+        </div>
       </div>
 
-      {selectedChild && (
-        <>
-          {/* Progress Header */}
-          <div className="bg-gradient-to-r from-[#a29bfe] to-[#6c5ce7] rounded-2xl p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm opacity-80">הישגים שנפתחו</div>
-                <div className="text-4xl font-bold">
-                  {achievementCount?.unlocked ?? 0}/{achievementCount?.total ?? 0}
-                </div>
-              </div>
-              <div className="text-6xl">🏆</div>
-            </div>
-            <div className="mt-4 h-3 bg-white/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-white transition-all duration-500"
-                style={{
-                  width: `${
-                    achievementCount
-                      ? (achievementCount.unlocked / achievementCount.total) * 100
-                      : 0
-                  }%`,
-                }}
-              />
-            </div>
-          </div>
+      {/* Filter Tabs */}
+      <div className="flex gap-2 bg-white rounded-xl p-1 shadow-sm">
+        <button
+          onClick={() => setFilter("all")}
+          className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+            filter === "all"
+              ? "bg-[#a29bfe] text-white"
+              : "text-gray-500 hover:bg-gray-100"
+          }`}
+        >
+          הכל
+        </button>
+        <button
+          onClick={() => setFilter("unlocked")}
+          className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+            filter === "unlocked"
+              ? "bg-[#a29bfe] text-white"
+              : "text-gray-500 hover:bg-gray-100"
+          }`}
+        >
+          נפתחו ✨
+        </button>
+        <button
+          onClick={() => setFilter("locked")}
+          className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+            filter === "locked"
+              ? "bg-[#a29bfe] text-white"
+              : "text-gray-500 hover:bg-gray-100"
+          }`}
+        >
+          נעולים 🔒
+        </button>
+      </div>
 
-          {/* Filter Tabs */}
-          <div className="flex gap-2 bg-white rounded-xl p-1 shadow-sm">
-            <button
-              onClick={() => setFilter("all")}
-              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                filter === "all"
-                  ? "bg-[#a29bfe] text-white"
-                  : "text-gray-500 hover:bg-gray-100"
-              }`}
-            >
-              הכל
-            </button>
-            <button
-              onClick={() => setFilter("unlocked")}
-              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                filter === "unlocked"
-                  ? "bg-[#a29bfe] text-white"
-                  : "text-gray-500 hover:bg-gray-100"
-              }`}
-            >
-              נפתחו ✨
-            </button>
-            <button
-              onClick={() => setFilter("locked")}
-              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                filter === "locked"
-                  ? "bg-[#a29bfe] text-white"
-                  : "text-gray-500 hover:bg-gray-100"
-              }`}
-            >
-              נעולים 🔒
-            </button>
-          </div>
+      {/* Achievements by Category */}
+      {categories.map((category) => {
+        const categoryAchievements = filteredAchievements?.filter(
+          (a) => a.category === category.id
+        );
+        if (!categoryAchievements || categoryAchievements.length === 0)
+          return null;
 
-          {/* Achievements by Category */}
-          {categories.map((category) => {
-            const categoryAchievements = filteredAchievements?.filter(
-              (a) => a.category === category.id
-            );
-            if (!categoryAchievements || categoryAchievements.length === 0)
-              return null;
-
-            return (
-              <div key={category.id} className="bg-white rounded-2xl p-6 shadow-sm">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <span className="text-2xl">{category.icon}</span>
-                  {category.name}
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {categoryAchievements.map((achievement) => (
-                    <div
-                      key={achievement.id}
-                      className={`p-4 rounded-xl text-center transition-all ${
-                        achievement.isUnlocked
-                          ? "bg-gradient-to-br from-[#a29bfe]/10 to-[#6c5ce7]/10 border-2 border-[#a29bfe]"
-                          : "bg-gray-100 opacity-60"
-                      }`}
-                    >
-                      <div
-                        className={`text-4xl mb-2 ${
-                          achievement.isUnlocked ? "" : "grayscale"
-                        }`}
-                      >
-                        {achievement.isUnlocked ? achievement.icon : "🔒"}
-                      </div>
-                      <div className="font-bold text-sm">{achievement.name}</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {achievement.description}
-                      </div>
-                      {achievement.isUnlocked && achievement.unlockedAt && (
-                        <div className="text-xs text-[#a29bfe] mt-2">
-                          נפתח ב-{" "}
-                          {new Date(achievement.unlockedAt).toLocaleDateString("he-IL")}
-                        </div>
-                      )}
+        return (
+          <div key={category.id} className="bg-white rounded-2xl p-6 shadow-sm">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <span className="text-2xl">{category.icon}</span>
+              {category.name}
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {categoryAchievements.map((achievement) => (
+                <div
+                  key={achievement.id}
+                  className={`p-4 rounded-xl text-center transition-all ${
+                    achievement.isUnlocked
+                      ? "bg-gradient-to-br from-[#a29bfe]/10 to-[#6c5ce7]/10 border-2 border-[#a29bfe]"
+                      : "bg-gray-100 opacity-60"
+                  }`}
+                >
+                  <div
+                    className={`text-4xl mb-2 ${
+                      achievement.isUnlocked ? "" : "grayscale"
+                    }`}
+                  >
+                    {achievement.isUnlocked ? achievement.icon : "🔒"}
+                  </div>
+                  <div className="font-bold text-sm">{achievement.name}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {achievement.description}
+                  </div>
+                  {achievement.isUnlocked && achievement.unlockedAt && (
+                    <div className="text-xs text-[#a29bfe] mt-2">
+                      נפתח ב-{" "}
+                      {new Date(achievement.unlockedAt).toLocaleDateString("he-IL")}
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            );
-          })}
-
-          {filteredAchievements?.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <div className="text-4xl mb-4">🏆</div>
-              <p>אין הישגים להציג</p>
+              ))}
             </div>
-          )}
-        </>
+          </div>
+        );
+      })}
+
+      {filteredAchievements?.length === 0 && (
+        <div className="text-center py-12 text-gray-500">
+          <div className="text-4xl mb-4">🏆</div>
+          <p>אין הישגים להציג</p>
+        </div>
       )}
     </div>
   );

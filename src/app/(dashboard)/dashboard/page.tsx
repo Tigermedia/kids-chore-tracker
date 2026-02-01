@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useEffect } from "react";
+import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../../convex/_generated/api";
-import { Id } from "../../../../convex/_generated/dataModel";
 import { DailyRewardCard } from "../../../components/dashboard/DailyRewardCard";
 import { WeeklyChallengeCard } from "../../../components/dashboard/WeeklyChallengeCard";
+import { useChild } from "../../../contexts/ChildContext";
 
 // Level definitions
 const LEVELS = [
@@ -39,19 +39,11 @@ function getNextLevelXP(xp: number) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const children = useQuery(api.children.listByFamily);
-  const [selectedChildId, setSelectedChildId] = useState<Id<"children"> | null>(
-    null
-  );
+  const { selectedChild, children, isLoading } = useChild();
 
   const initWeeklyChallenge = useMutation(
     api.challenges.initializeWeeklyChallenge
   );
-
-  const selectedChild =
-    selectedChildId && children
-      ? children.find((c) => c._id === selectedChildId)
-      : children?.[0];
 
   // Redirect to parent area if no children
   useEffect(() => {
@@ -69,7 +61,7 @@ export default function DashboardPage() {
     }
   }, [selectedChild?._id, initWeeklyChallenge]);
 
-  if (!children) {
+  if (isLoading || !children) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#22d1c6]"></div>
@@ -89,39 +81,20 @@ export default function DashboardPage() {
     );
   }
 
-  const level = selectedChild ? calculateLevel(selectedChild.xp) : 0;
+  if (!selectedChild) {
+    return null;
+  }
+
+  const level = calculateLevel(selectedChild.xp);
   const currentLevelXP = LEVELS[level].xpRequired;
-  const nextLevelXP = getNextLevelXP(selectedChild?.xp || 0);
+  const nextLevelXP = getNextLevelXP(selectedChild.xp);
   const xpProgress =
-    selectedChild && nextLevelXP > currentLevelXP
+    nextLevelXP > currentLevelXP
       ? ((selectedChild.xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100
       : 100;
 
   return (
     <div className="space-y-6 pb-20 md:pb-6">
-      {/* Child Selector */}
-      <div className="flex items-center gap-4 overflow-x-auto pb-2">
-        {children.map((child) => (
-          <button
-            key={child._id}
-            onClick={() => setSelectedChildId(child._id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-              selectedChild?._id === child._id
-                ? "text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
-            style={
-              selectedChild?._id === child._id
-                ? { backgroundColor: child.theme }
-                : undefined
-            }
-          >
-            <span className="text-xl">{child.avatar}</span>
-            <span className="font-medium">{child.name}</span>
-          </button>
-        ))}
-      </div>
-
       {selectedChild && (
         <>
           {/* Daily Reward */}

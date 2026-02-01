@@ -1,27 +1,18 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { Id } from "../../../../../convex/_generated/dataModel";
+import { useChild } from "../../../../contexts/ChildContext";
 
 export default function ReportsPage() {
-  const children = useQuery(api.children.listByFamily);
-  const [selectedChildId, setSelectedChildId] = useState<Id<"children"> | null>(
-    null
-  );
-
-  const selectedChild =
-    selectedChildId && children
-      ? children.find((c) => c._id === selectedChildId)
-      : children?.[0];
+  const { selectedChild, children, isLoading } = useChild();
 
   const completionHistory = useQuery(
     api.tasks.getCompletionHistory,
     selectedChild ? { childId: selectedChild._id, limit: 30 } : "skip"
   );
 
-  if (!children) {
+  if (isLoading || !children) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#22d1c6]"></div>
@@ -45,6 +36,10 @@ export default function ReportsPage() {
     );
   }
 
+  if (!selectedChild) {
+    return null;
+  }
+
   // Group completions by date
   const completionsByDate: Record<
     string,
@@ -63,130 +58,108 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6 pb-20 md:pb-6">
-      {/* Child Selector */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-2">
-        {children.map((child) => (
-          <button
-            key={child._id}
-            onClick={() => setSelectedChildId(child._id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-              selectedChild?._id === child._id
-                ? "bg-[#22d1c6] text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <span className="text-xl">{child.avatar}</span>
-            <span className="font-medium">{child.name}</span>
-          </button>
-        ))}
+      {/* Stats Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
+          <div className="text-3xl mb-2">⭐</div>
+          <div className="text-2xl font-bold text-[#22d1c6]">
+            {selectedChild.totalPoints}
+          </div>
+          <div className="text-sm text-gray-500">נקודות סה״כ</div>
+        </div>
+        <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
+          <div className="text-3xl mb-2">✅</div>
+          <div className="text-2xl font-bold text-[#95e1d3]">
+            {selectedChild.totalTasksCompleted}
+          </div>
+          <div className="text-sm text-gray-500">משימות הושלמו</div>
+        </div>
+        <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
+          <div className="text-3xl mb-2">🔥</div>
+          <div className="text-2xl font-bold text-[#ff6b6b]">
+            {selectedChild.currentStreak}
+          </div>
+          <div className="text-sm text-gray-500">ימים ברצף</div>
+        </div>
+        <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
+          <div className="text-3xl mb-2">🏆</div>
+          <div className="text-2xl font-bold text-[#a29bfe]">
+            {selectedChild.longestStreak}
+          </div>
+          <div className="text-sm text-gray-500">רצף שיא</div>
+        </div>
       </div>
 
-      {selectedChild && (
-        <>
-          {/* Stats Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
-              <div className="text-3xl mb-2">⭐</div>
-              <div className="text-2xl font-bold text-[#22d1c6]">
-                {selectedChild.totalPoints}
-              </div>
-              <div className="text-sm text-gray-500">נקודות סה״כ</div>
-            </div>
-            <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
-              <div className="text-3xl mb-2">✅</div>
-              <div className="text-2xl font-bold text-[#95e1d3]">
-                {selectedChild.totalTasksCompleted}
-              </div>
-              <div className="text-sm text-gray-500">משימות הושלמו</div>
-            </div>
-            <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
-              <div className="text-3xl mb-2">🔥</div>
-              <div className="text-2xl font-bold text-[#ff6b6b]">
-                {selectedChild.currentStreak}
-              </div>
-              <div className="text-sm text-gray-500">ימים ברצף</div>
-            </div>
-            <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
-              <div className="text-3xl mb-2">🏆</div>
-              <div className="text-2xl font-bold text-[#a29bfe]">
-                {selectedChild.longestStreak}
-              </div>
-              <div className="text-sm text-gray-500">רצף שיא</div>
-            </div>
-          </div>
+      {/* Activity History */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <span className="text-2xl">📅</span>
+          היסטוריית פעילות
+        </h3>
 
-          {/* Activity History */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <span className="text-2xl">📅</span>
-              היסטוריית פעילות
-            </h3>
+        {sortedDates.length > 0 ? (
+          <div className="space-y-6">
+            {sortedDates.map((date) => {
+              const dayCompletions = completionsByDate[date];
+              const totalPoints = dayCompletions.reduce(
+                (sum, c) => sum + c.points,
+                0
+              );
+              const formattedDate = new Date(date).toLocaleDateString(
+                "he-IL",
+                {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                }
+              );
 
-            {sortedDates.length > 0 ? (
-              <div className="space-y-6">
-                {sortedDates.map((date) => {
-                  const dayCompletions = completionsByDate[date];
-                  const totalPoints = dayCompletions.reduce(
-                    (sum, c) => sum + c.points,
-                    0
-                  );
-                  const formattedDate = new Date(date).toLocaleDateString(
-                    "he-IL",
-                    {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                    }
-                  );
-
-                  return (
-                    <div key={date}>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="font-medium text-gray-700">
-                          {formattedDate}
+              return (
+                <div key={date}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="font-medium text-gray-700">
+                      {formattedDate}
+                    </div>
+                    <div className="text-sm text-[#22d1c6]">
+                      +{totalPoints} נקודות
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {dayCompletions.map((completion) => (
+                      <div
+                        key={completion._id}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
+                      >
+                        <div className="text-2xl">{completion.taskIcon}</div>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">
+                            {completion.taskName}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {new Date(completion.completedAt).toLocaleTimeString(
+                              "he-IL",
+                              { hour: "2-digit", minute: "2-digit" }
+                            )}
+                          </div>
                         </div>
                         <div className="text-sm text-[#22d1c6]">
-                          +{totalPoints} נקודות
+                          +{completion.points}
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        {dayCompletions.map((completion) => (
-                          <div
-                            key={completion._id}
-                            className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
-                          >
-                            <div className="text-2xl">{completion.taskIcon}</div>
-                            <div className="flex-1">
-                              <div className="font-medium text-sm">
-                                {completion.taskName}
-                              </div>
-                              <div className="text-xs text-gray-400">
-                                {new Date(completion.completedAt).toLocaleTimeString(
-                                  "he-IL",
-                                  { hour: "2-digit", minute: "2-digit" }
-                                )}
-                              </div>
-                            </div>
-                            <div className="text-sm text-[#22d1c6]">
-                              +{completion.points}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <div className="text-4xl mb-4">📊</div>
-                <p>אין פעילות עדיין</p>
-                <p className="text-sm mt-2">השלם משימות כדי לראות את ההיסטוריה</p>
-              </div>
-            )}
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </>
-      )}
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <div className="text-4xl mb-4">📊</div>
+            <p>אין פעילות עדיין</p>
+            <p className="text-sm mt-2">השלם משימות כדי לראות את ההיסטוריה</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,31 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { APP_VERSION } from "../../lib/version";
-import { Id } from "../../../convex/_generated/dataModel";
+import { ChildProvider, useChild } from "../../contexts/ChildContext";
+import { ChildSelectScreen } from "../../components/child-select/ChildSelectScreen";
+import { PinModal } from "../../components/pin/PinModal";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const [userEnsured, setUserEnsured] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [selectedChildId, setSelectedChildId] = useState<Id<"children"> | null>(null);
+  const [showSwitchPin, setShowSwitchPin] = useState(false);
+  const { selectedChild, selectedChildId, children: childrenList, clearChild, isLoading } = useChild();
   const user = useQuery(api.users.getCurrentUser);
   const family = useQuery(api.users.getUserFamily);
-  const children_list = useQuery(api.children.listByFamily);
+  const hasPin = useQuery(api.families.hasParentPin);
   const pathname = usePathname();
   const ensureUser = useMutation(api.users.ensureUser);
   const markAsRead = useMutation(api.notifications.markAsRead);
   const markAllAsRead = useMutation(api.notifications.markAllAsRead);
 
-  // Get first child for notifications if none selected
-  const activeChildId = selectedChildId || children_list?.[0]?._id;
+  const activeChildId = selectedChildId;
 
   const unreadNotifications = useQuery(
     api.notifications.getUnread,
@@ -36,18 +34,34 @@ export default function DashboardLayout({
 
   // Ensure user and family exist (fallback if webhook didn't work)
   useEffect(() => {
-    // user is undefined while loading, null when doesn't exist
-    // Only run ensureUser when we're sure user doesn't exist (user === null)
     if (user === null && !userEnsured) {
       ensureUser()
         .then(() => setUserEnsured(true))
         .catch(console.error);
     }
-    // Also set userEnsured to true if user already exists
     if (user !== undefined && user !== null && !userEnsured) {
       setUserEnsured(true);
     }
   }, [user, userEnsured, ensureUser]);
+
+  const handleSwitchChild = useCallback(() => {
+    if (hasPin) {
+      setShowSwitchPin(true);
+    } else {
+      // No PIN set, allow switching directly
+      clearChild();
+    }
+  }, [hasPin, clearChild]);
+
+  const handlePinSuccess = useCallback(() => {
+    setShowSwitchPin(false);
+    clearChild();
+  }, [clearChild]);
+
+  // If loading or no child selected, show selection screen
+  if (!isLoading && childrenList && childrenList.length > 0 && !selectedChild) {
+    return <ChildSelectScreen />;
+  }
 
   const navItems = [
     { href: "/dashboard", label: "ראשי", icon: "home" },
@@ -74,7 +88,30 @@ export default function DashboardLayout({
             )}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Current Child Indicator */}
+            {selectedChild && (
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white text-sm font-medium"
+                  style={{ backgroundColor: selectedChild.theme }}
+                >
+                  <span className="text-lg">{selectedChild.avatar}</span>
+                  <span>{selectedChild.name}</span>
+                </div>
+                {/* Switch Child Button */}
+                {childrenList && childrenList.length > 1 && (
+                  <button
+                    onClick={handleSwitchChild}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700"
+                    title="החלף ילד"
+                  >
+                    🔄
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Notification Bell */}
             <div className="relative">
               <button
@@ -180,12 +217,31 @@ export default function DashboardLayout({
         </div>
       </nav>
 
-      {/* Desktop Sidebar would go here if needed */}
-
       {/* Footer */}
       <footer className="hidden md:block text-center py-4 text-gray-400 text-sm">
         <p>v{APP_VERSION}</p>
       </footer>
+
+      {/* PIN Modal for switching child */}
+      {showSwitchPin && (
+        <PinModal
+          mode="verify"
+          onSuccess={handlePinSuccess}
+          onCancel={() => setShowSwitchPin(false)}
+        />
+      )}
     </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <ChildProvider>
+      <DashboardContent>{children}</DashboardContent>
+    </ChildProvider>
   );
 }

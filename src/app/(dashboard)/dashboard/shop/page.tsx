@@ -4,22 +4,15 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import { useChild } from "../../../../contexts/ChildContext";
 
 export default function ShopPage() {
-  const children = useQuery(api.children.listByFamily);
+  const { selectedChild, children, isLoading } = useChild();
   const rewards = useQuery(api.rewards.listByFamily);
-  const [selectedChildId, setSelectedChildId] = useState<Id<"children"> | null>(
-    null
-  );
   const [showConfirm, setShowConfirm] = useState<Id<"rewards"> | null>(null);
   const [purchasing, setPurchasing] = useState(false);
 
   const purchase = useMutation(api.rewards.purchase);
-
-  const selectedChild =
-    selectedChildId && children
-      ? children.find((c) => c._id === selectedChildId)
-      : children?.[0];
 
   const unredeemedPurchases = useQuery(
     api.rewards.getUnredeemedPurchases,
@@ -39,7 +32,7 @@ export default function ShopPage() {
     setPurchasing(false);
   };
 
-  if (!children) {
+  if (isLoading || !children) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ffd93d]"></div>
@@ -63,107 +56,89 @@ export default function ShopPage() {
     );
   }
 
+  if (!selectedChild) {
+    return null;
+  }
+
   return (
     <div className="space-y-6 pb-20 md:pb-6">
-      {/* Child Selector */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-2">
-        {children.map((child) => (
-          <button
-            key={child._id}
-            onClick={() => setSelectedChildId(child._id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-              selectedChild?._id === child._id
-                ? "bg-[#ffd93d] text-gray-800 shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <span className="text-xl">{child.avatar}</span>
-            <span className="font-medium">{child.name}</span>
-          </button>
-        ))}
+      {/* Points Balance */}
+      <div className="bg-gradient-to-r from-[#ffd93d] to-[#ffb347] rounded-2xl p-6 text-gray-800">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm opacity-80">הנקודות שלך</div>
+            <div className="text-4xl font-bold">{selectedChild.totalPoints}</div>
+          </div>
+          <div className="text-6xl">⭐</div>
+        </div>
       </div>
 
-      {selectedChild && (
-        <>
-          {/* Points Balance */}
-          <div className="bg-gradient-to-r from-[#ffd93d] to-[#ffb347] rounded-2xl p-6 text-gray-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm opacity-80">הנקודות שלך</div>
-                <div className="text-4xl font-bold">{selectedChild.totalPoints}</div>
+      {/* Unredeemed Purchases */}
+      {unredeemedPurchases && unredeemedPurchases.length > 0 && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <span className="text-2xl">🎁</span>
+            פרסים שטרם מומשו
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            {unredeemedPurchases.map((purchase) => (
+              <div
+                key={purchase._id}
+                className="bg-green-50 border-2 border-green-200 rounded-xl p-4 text-center"
+              >
+                <div className="text-3xl mb-2">{purchase.rewardIcon}</div>
+                <div className="font-medium text-sm">{purchase.rewardName}</div>
+                <div className="text-xs text-gray-500 mt-1">ממתין למימוש</div>
               </div>
-              <div className="text-6xl">⭐</div>
-            </div>
+            ))}
           </div>
-
-          {/* Unredeemed Purchases */}
-          {unredeemedPurchases && unredeemedPurchases.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <span className="text-2xl">🎁</span>
-                פרסים שטרם מומשו
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                {unredeemedPurchases.map((purchase) => (
-                  <div
-                    key={purchase._id}
-                    className="bg-green-50 border-2 border-green-200 rounded-xl p-4 text-center"
-                  >
-                    <div className="text-3xl mb-2">{purchase.rewardIcon}</div>
-                    <div className="font-medium text-sm">{purchase.rewardName}</div>
-                    <div className="text-xs text-gray-500 mt-1">ממתין למימוש</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Rewards Shop */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <span className="text-2xl">🏪</span>
-              חנות הפרסים
-            </h3>
-
-            {rewards && rewards.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4">
-                {rewards.map((reward) => {
-                  const canAfford = selectedChild.totalPoints >= reward.cost;
-                  return (
-                    <button
-                      key={reward._id}
-                      onClick={() => canAfford && setShowConfirm(reward._id)}
-                      disabled={!canAfford}
-                      className={`p-4 rounded-xl border-2 transition-all text-center ${
-                        canAfford
-                          ? "border-[#ffd93d] hover:bg-yellow-50 hover:shadow-md cursor-pointer"
-                          : "border-gray-200 opacity-50 cursor-not-allowed"
-                      }`}
-                    >
-                      <div className="text-4xl mb-2">{reward.icon}</div>
-                      <div className="font-bold text-sm mb-1">{reward.name}</div>
-                      <div className="text-xs text-gray-500 mb-2 line-clamp-2">
-                        {reward.description}
-                      </div>
-                      <div
-                        className={`font-bold ${canAfford ? "text-[#ffd93d]" : "text-gray-400"}`}
-                      >
-                        ⭐ {reward.cost}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <div className="text-4xl mb-4">🏪</div>
-                <p>אין פרסים בחנות עדיין</p>
-                <p className="text-sm mt-2">ההורים יכולים להוסיף פרסים במצב הורה</p>
-              </div>
-            )}
-          </div>
-        </>
+        </div>
       )}
+
+      {/* Rewards Shop */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <span className="text-2xl">🏪</span>
+          חנות הפרסים
+        </h3>
+
+        {rewards && rewards.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4">
+            {rewards.map((reward) => {
+              const canAfford = selectedChild.totalPoints >= reward.cost;
+              return (
+                <button
+                  key={reward._id}
+                  onClick={() => canAfford && setShowConfirm(reward._id)}
+                  disabled={!canAfford}
+                  className={`p-4 rounded-xl border-2 transition-all text-center ${
+                    canAfford
+                      ? "border-[#ffd93d] hover:bg-yellow-50 hover:shadow-md cursor-pointer"
+                      : "border-gray-200 opacity-50 cursor-not-allowed"
+                  }`}
+                >
+                  <div className="text-4xl mb-2">{reward.icon}</div>
+                  <div className="font-bold text-sm mb-1">{reward.name}</div>
+                  <div className="text-xs text-gray-500 mb-2 line-clamp-2">
+                    {reward.description}
+                  </div>
+                  <div
+                    className={`font-bold ${canAfford ? "text-[#ffd93d]" : "text-gray-400"}`}
+                  >
+                    ⭐ {reward.cost}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <div className="text-4xl mb-4">🏪</div>
+            <p>אין פרסים בחנות עדיין</p>
+            <p className="text-sm mt-2">ההורים יכולים להוסיף פרסים במצב הורה</p>
+          </div>
+        )}
+      </div>
 
       {/* Confirm Purchase Modal */}
       {showConfirm && rewards && (

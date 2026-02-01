@@ -5,18 +5,11 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { Confetti } from "../../../../components/celebration/Confetti";
+import { useChild } from "../../../../contexts/ChildContext";
 
 export default function TasksPage() {
-  const children = useQuery(api.children.listByFamily);
-  const [selectedChildId, setSelectedChildId] = useState<Id<"children"> | null>(
-    null
-  );
+  const { selectedChild, children, isLoading } = useChild();
   const [showCelebration, setShowCelebration] = useState(false);
-
-  const selectedChild =
-    selectedChildId && children
-      ? children.find((c) => c._id === selectedChildId)
-      : children?.[0];
 
   const tasks = useQuery(
     api.tasks.getTodayTasks,
@@ -43,7 +36,7 @@ export default function TasksPage() {
     }
   };
 
-  if (!children) {
+  if (isLoading || !children) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#22d1c6]"></div>
@@ -67,6 +60,10 @@ export default function TasksPage() {
     );
   }
 
+  if (!selectedChild) {
+    return null;
+  }
+
   const morningTasks = tasks?.filter((t) => t.timeOfDay === "morning") ?? [];
   const eveningTasks = tasks?.filter((t) => t.timeOfDay === "evening") ?? [];
   const specialTasks = tasks?.filter((t) => t.timeOfDay === "special") ?? [];
@@ -80,112 +77,90 @@ export default function TasksPage() {
       {/* Celebration Animation */}
       <Confetti show={showCelebration} onComplete={() => setShowCelebration(false)} />
 
-      {/* Child Selector */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-2">
-        {children.map((child) => (
-          <button
-            key={child._id}
-            onClick={() => setSelectedChildId(child._id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-              selectedChild?._id === child._id
-                ? "bg-[#22d1c6] text-white shadow-lg"
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <span className="text-xl">{child.avatar}</span>
-            <span className="font-medium">{child.name}</span>
-          </button>
-        ))}
+      {/* Progress Header */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-bold">משימות היום</h2>
+          <div className="text-[#22d1c6] font-bold">
+            {completedCount}/{totalCount}
+          </div>
+        </div>
+        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-[#22d1c6] to-[#a29bfe] transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        {progress === 100 && (
+          <div className="text-center mt-3 text-[#22d1c6] font-bold">
+            🎉 כל הכבוד! השלמת את כל המשימות!
+          </div>
+        )}
       </div>
 
-      {selectedChild && (
-        <>
-          {/* Progress Header */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xl font-bold">משימות היום</h2>
-              <div className="text-[#22d1c6] font-bold">
-                {completedCount}/{totalCount}
-              </div>
-            </div>
-            <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-[#22d1c6] to-[#a29bfe] transition-all duration-500"
-                style={{ width: `${progress}%` }}
+      {/* Morning Tasks */}
+      {morningTasks.length > 0 && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <span className="text-2xl">🌅</span>
+            משימות בוקר
+          </h3>
+          <div className="space-y-3">
+            {morningTasks.map((task) => (
+              <TaskItem
+                key={task._id}
+                task={task}
+                onToggle={() => handleTaskToggle(task)}
               />
-            </div>
-            {progress === 100 && (
-              <div className="text-center mt-3 text-[#22d1c6] font-bold">
-                🎉 כל הכבוד! השלמת את כל המשימות!
-              </div>
-            )}
+            ))}
           </div>
+        </div>
+      )}
 
-          {/* Morning Tasks */}
-          {morningTasks.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <span className="text-2xl">🌅</span>
-                משימות בוקר
-              </h3>
-              <div className="space-y-3">
-                {morningTasks.map((task) => (
-                  <TaskItem
-                    key={task._id}
-                    task={task}
-                    onToggle={() => handleTaskToggle(task)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Evening Tasks */}
+      {eveningTasks.length > 0 && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <span className="text-2xl">🌙</span>
+            משימות ערב
+          </h3>
+          <div className="space-y-3">
+            {eveningTasks.map((task) => (
+              <TaskItem
+                key={task._id}
+                task={task}
+                onToggle={() => handleTaskToggle(task)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
-          {/* Evening Tasks */}
-          {eveningTasks.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <span className="text-2xl">🌙</span>
-                משימות ערב
-              </h3>
-              <div className="space-y-3">
-                {eveningTasks.map((task) => (
-                  <TaskItem
-                    key={task._id}
-                    task={task}
-                    onToggle={() => handleTaskToggle(task)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Special Tasks */}
+      {specialTasks.length > 0 && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <span className="text-2xl">⭐</span>
+            משימות מיוחדות
+          </h3>
+          <div className="space-y-3">
+            {specialTasks.map((task) => (
+              <TaskItem
+                key={task._id}
+                task={task}
+                onToggle={() => handleTaskToggle(task)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
-          {/* Special Tasks */}
-          {specialTasks.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <span className="text-2xl">⭐</span>
-                משימות מיוחדות
-              </h3>
-              <div className="space-y-3">
-                {specialTasks.map((task) => (
-                  <TaskItem
-                    key={task._id}
-                    task={task}
-                    onToggle={() => handleTaskToggle(task)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {tasks?.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <div className="text-4xl mb-4">📝</div>
-              <p>אין משימות עדיין</p>
-              <p className="text-sm mt-2">ההורים יכולים להוסיף משימות במצב הורה</p>
-            </div>
-          )}
-        </>
+      {tasks?.length === 0 && (
+        <div className="text-center py-12 text-gray-500">
+          <div className="text-4xl mb-4">📝</div>
+          <p>אין משימות עדיין</p>
+          <p className="text-sm mt-2">ההורים יכולים להוסיף משימות במצב הורה</p>
+        </div>
       )}
     </div>
   );
