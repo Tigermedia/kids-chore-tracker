@@ -15,6 +15,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSwitchPin, setShowSwitchPin] = useState(false);
   const { selectedChild, selectedChildId, children: childrenList, clearChild, isLoading } = useChild();
+
+  // Clear parent mode session when entering child dashboard
+  // This ensures PIN is always required when switching to parent mode
+  useEffect(() => {
+    localStorage.removeItem("parentModeLastActivity");
+  }, []);
   const user = useQuery(api.users.getCurrentUser);
   const family = useQuery(api.users.getUserFamily);
   const hasPin = useQuery(api.families.hasParentPin);
