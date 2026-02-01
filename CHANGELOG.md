@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-01
+
+### Added
+
+- **Child Profile Isolation**: Each child now sees only their own profile and data
+  - New `ChildContext` provider manages selected child state across all dashboard pages
+  - `ChildSelectScreen` component for choosing which child to enter as
+  - Dashboard, tasks, shop, achievements, and reports all scoped to selected child
+  - Parent PIN required to switch between children (prevents kids peeking at siblings)
+- **Multi-Child Task Assignment**: When adding a new task in parent mode, select multiple children at once
+  - Child selector chips with color-coded avatars
+  - Pre-selects currently viewed child
+  - Tasks created in parallel for all selected children
+  - Only appears when family has 2+ children
+
+### Fixed
+
+- **Parent PIN Always Required**: Entering the child dashboard now clears the parent mode session
+  - Previously, kids could access parent mode without PIN if the parent had been active within 15 minutes
+  - Now switching from child dashboard to parent mode always requires PIN entry
+
+### Changed
+
+- Dashboard layout refactored to use `ChildProvider` wrapper
+- All dashboard sub-pages simplified to use `useChild()` hook instead of local state
+- Task modal updated with child assignment UI for new tasks
+
 ## [1.2.0] - 2026-01-13
 
 ### Added
