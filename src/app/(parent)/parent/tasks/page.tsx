@@ -85,12 +85,18 @@ export default function ParentTasksPage() {
     icon: string;
     points: number;
     timeOfDay: TimeOfDay;
+    childIds?: Id<"children">[];
   }) => {
-    if (!selectedChild) return;
-    await createTemplate({
-      childId: selectedChild._id,
-      ...task,
-    });
+    const targetIds = task.childIds && task.childIds.length > 0
+      ? task.childIds
+      : selectedChild ? [selectedChild._id] : [];
+    if (targetIds.length === 0) return;
+    const { childIds: _, ...taskData } = task;
+    await Promise.all(
+      targetIds.map((childId) =>
+        createTemplate({ childId, ...taskData })
+      )
+    );
     setShowAddModal(false);
   };
 
@@ -188,6 +194,9 @@ export default function ParentTasksPage() {
             setShowAddModal(false);
             setEditingTask(null);
           }}
+          allChildren={children}
+          selectedChildId={selectedChild?._id ?? null}
+          isNew={!editingTask}
         />
       )}
 
@@ -294,21 +303,39 @@ function TaskModal({
   task,
   onSave,
   onClose,
+  allChildren,
+  selectedChildId,
+  isNew,
 }: {
   task: { name: string; icon: string; points: number; timeOfDay: TimeOfDay } | null;
-  onSave: (task: { name: string; icon: string; points: number; timeOfDay: TimeOfDay }) => void;
+  onSave: (task: { name: string; icon: string; points: number; timeOfDay: TimeOfDay; childIds?: Id<"children">[] }) => void;
   onClose: () => void;
+  allChildren?: Array<{ _id: Id<"children">; name: string; avatar: string; theme: string }>;
+  selectedChildId?: Id<"children"> | null;
+  isNew?: boolean;
 }) {
   const [name, setName] = useState(task?.name ?? "");
   const [icon, setIcon] = useState(task?.icon ?? "⭐");
   const [points, setPoints] = useState(task?.points ?? 10);
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(task?.timeOfDay ?? "morning");
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [selectedChildIds, setSelectedChildIds] = useState<Id<"children">[]>(
+    selectedChildId ? [selectedChildId] : []
+  );
+
+  const toggleChild = (childId: Id<"children">) => {
+    setSelectedChildIds((prev) =>
+      prev.includes(childId)
+        ? prev.filter((id) => id !== childId)
+        : [...prev, childId]
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({ name: name.trim(), icon, points, timeOfDay });
+    if (isNew && selectedChildIds.length === 0) return;
+    onSave({ name: name.trim(), icon, points, timeOfDay, childIds: isNew ? selectedChildIds : undefined });
   };
 
   return (
@@ -403,6 +430,44 @@ function TaskModal({
             </div>
           </div>
 
+          {/* Child Selector (only for new tasks) */}
+          {isNew && allChildren && allChildren.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">שייך לילדים</label>
+              <div className="flex flex-wrap gap-2">
+                {allChildren.map((child) => {
+                  const isSelected = selectedChildIds.includes(child._id);
+                  return (
+                    <button
+                      key={child._id}
+                      type="button"
+                      onClick={() => toggleChild(child._id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all ${
+                        isSelected
+                          ? "text-white shadow-md"
+                          : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
+                      }`}
+                      style={
+                        isSelected
+                          ? { backgroundColor: child.theme, borderColor: child.theme }
+                          : undefined
+                      }
+                    >
+                      <span className="text-lg">{child.avatar}</span>
+                      <span className="font-medium text-sm">{child.name}</span>
+                      {isSelected && (
+                        <span className="material-symbols-outlined text-sm">check</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedChildIds.length === 0 && (
+                <p className="text-red-500 text-xs mt-1">בחר לפחות ילד אחד</p>
+              )}
+            </div>
+          )}
+
           {/* Buttons */}
           <div className="flex gap-3 pt-4">
             <button
@@ -414,7 +479,8 @@ function TaskModal({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-3 bg-[#a29bfe] text-white rounded-xl hover:bg-[#8b84e8] transition-colors font-medium"
+              disabled={isNew && allChildren && allChildren.length > 1 && selectedChildIds.length === 0}
+              className="flex-1 px-4 py-3 bg-[#a29bfe] text-white rounded-xl hover:bg-[#8b84e8] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {task ? "שמור" : "הוסף"}
             </button>
