@@ -3,13 +3,55 @@ import { mutation, query, internalMutation } from "./_generated/server";
 
 // Default rewards data
 const DEFAULT_REWARDS = [
+  // Basic (30-60)
   { name: "30 דקות טלוויזיה", icon: "📺", description: "30 דקות צפייה בטלוויזיה", cost: 50 },
-  { name: "גלידה", icon: "🍦", description: "גלידה לבחירתך", cost: 75 },
+  { name: "זמן יצירה", icon: "🎨", description: "30 דקות ציור או יצירה עם הורה", cost: 30 },
+  { name: "סרטון יוטיוב", icon: "📱", description: "15 דקות יוטיוב לבחירה", cost: 35 },
+  { name: "פופקורן בערב", icon: "🍿", description: "פופקורן לצפייה בסרט", cost: 40 },
   { name: "משחק מחשב", icon: "🎮", description: "30 דקות משחקי מחשב", cost: 60 },
+  // Medium (75-150)
+  { name: "גלידה", icon: "🍦", description: "גלידה לבחירתך", cost: 75 },
+  { name: "בחירת סרט", icon: "🎬", description: "הילד בוחר את סרט הערב", cost: 80 },
   { name: "לילה להישאר ער", icon: "🌙", description: "להישאר ער חצי שעה יותר", cost: 100 },
+  { name: "ארוחה לבחירה", icon: "🍕", description: "הילד בוחר מה אוכלים", cost: 100 },
+  { name: "שחייה או פארק", icon: "🏊", description: "יציאה לבריכה או פארק", cost: 120 },
+  { name: "צעצוע קטן", icon: "🧸", description: "צעצוע קטן מאליאקספרס", cost: 150 },
+  // Premium (200-500)
   { name: "מתנה קטנה", icon: "🎁", description: "מתנה הפתעה קטנה", cost: 200 },
+  { name: "כסף כיס", icon: "💰", description: "10 שקלים מזומן", cost: 250 },
+  { name: "מסיבת חברים", icon: "🎂", description: "להזמין חבר לישון", cost: 300 },
+  { name: "פעילות מיוחדת", icon: "🎪", description: "לונה פארק, באולינג או אטרקציה", cost: 400 },
   { name: "יום בילוי", icon: "🎢", description: "יום כיף לבחירתך", cost: 500 },
 ];
+
+// Internal mutation for initializing rewards (called from users.ts)
+// One-time migration: add missing default rewards to all families
+export const addMissingDefaultRewards = internalMutation({
+  handler: async (ctx) => {
+    const families = await ctx.db.query("families").collect();
+    let added = 0;
+    for (const family of families) {
+      const existingRewards = await ctx.db
+        .query("rewards")
+        .withIndex("by_familyId", (q) => q.eq("familyId", family._id))
+        .collect();
+      const existingNames = new Set(existingRewards.map((r) => r.name));
+      for (const reward of DEFAULT_REWARDS) {
+        if (!existingNames.has(reward.name)) {
+          await ctx.db.insert("rewards", {
+            familyId: family._id,
+            ...reward,
+            isActive: true,
+            isDefault: true,
+            createdAt: Date.now(),
+          });
+          added++;
+        }
+      }
+    }
+    return { familiesProcessed: families.length, rewardsAdded: added };
+  },
+});
 
 // Internal mutation for initializing rewards (called from users.ts)
 export const initializeDefaultRewardsInternal = internalMutation({
