@@ -479,42 +479,47 @@ export const removeFamilyMember = mutation({
 // Get all family members with user info
 export const getFamilyMembers = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+    try {
+      const identity = await ctx.auth.getUserIdentity();
+      if (!identity) return [];
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-    if (!user) return [];
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+        .unique();
+      if (!user) return [];
 
-    const familyMember = await ctx.db
-      .query("familyMembers")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .first();
-    if (!familyMember) return [];
+      const familyMember = await ctx.db
+        .query("familyMembers")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .first();
+      if (!familyMember) return [];
 
-    const members = await ctx.db
-      .query("familyMembers")
-      .withIndex("by_familyId", (q) => q.eq("familyId", familyMember.familyId))
-      .collect();
+      const members = await ctx.db
+        .query("familyMembers")
+        .withIndex("by_familyId", (q) => q.eq("familyId", familyMember.familyId))
+        .collect();
 
-    const result = [];
-    for (const member of members) {
-      const memberUser = await ctx.db.get(member.userId);
-      if (memberUser) {
-        result.push({
-          _id: member._id,
-          userId: member.userId,
-          role: member.role,
-          joinedAt: member.joinedAt,
-          name: memberUser.name ?? "משתמש",
-          email: memberUser.email,
-          imageUrl: memberUser.imageUrl,
-        });
+      const result = [];
+      for (const member of members) {
+        const memberUser = await ctx.db.get(member.userId);
+        if (memberUser) {
+          result.push({
+            _id: member._id,
+            userId: member.userId,
+            role: member.role,
+            joinedAt: member.joinedAt,
+            name: memberUser.name ?? "משתמש",
+            email: memberUser.email,
+            imageUrl: memberUser.imageUrl ?? undefined,
+          });
+        }
       }
-    }
 
-    return result;
+      return result;
+    } catch (error) {
+      console.error("getFamilyMembers error:", error);
+      return [];
+    }
   },
 });
