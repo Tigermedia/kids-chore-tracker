@@ -266,26 +266,28 @@ export const getMyInvites = query({
       .unique();
     if (!user) return [];
 
+    // Query invites by the user's email
     const invites = await ctx.db
       .query("familyInvites")
-      .withIndex("by_invitedEmail", (q) =>
-        q.eq("invitedEmail", user.email.toLowerCase())
-      )
+      .withIndex("by_invitedEmail", (q) => q.eq("invitedEmail", user.email.toLowerCase()))
       .collect();
 
-    // Return pending invites with family info
     const pendingInvites = invites.filter((inv) => inv.status === "pending");
-    const result = [];
-    for (const invite of pendingInvites) {
-      const family = await ctx.db.get(invite.familyId);
-      const inviter = await ctx.db.get(invite.invitedBy);
-      result.push({
-        ...invite,
-        familyName: family?.name ?? "משפחה",
-        inviterName: inviter?.name ?? "משתמש",
-      });
-    }
-    return result;
+
+    // Enrich with family name and inviter info
+    const enriched = await Promise.all(
+      pendingInvites.map(async (invite) => {
+        const family = await ctx.db.get(invite.familyId);
+        const inviter = await ctx.db.get(invite.invitedBy);
+        return {
+          ...invite,
+          familyName: family?.name ?? "משפחה",
+          inviterName: inviter?.name ?? inviter?.email ?? "unknown",
+        };
+      })
+    );
+
+    return enriched;
   },
 });
 
@@ -479,47 +481,46 @@ export const removeFamilyMember = mutation({
 // Get all family members with user info
 export const getFamilyMembers = query({
   handler: async (ctx) => {
-    try {
-      const identity = await ctx.auth.getUserIdentity();
-      if (!identity) return [];
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
 
-      const user = await ctx.db
-        .query("users")
-        .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-        .unique();
-      if (!user) return [];
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    if (!user) return [];
 
-      const familyMember = await ctx.db
-        .query("familyMembers")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
-        .first();
-      if (!familyMember) return [];
+    const familyMember = await ctx.db
+      .query("familyMembers")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    if (!familyMember) return [];
 
-      const members = await ctx.db
-        .query("familyMembers")
-        .withIndex("by_familyId", (q) => q.eq("familyId", familyMember.familyId))
-        .collect();
+    const family = await ctx.db.get(familyMember.familyId);
+    if (!family) return [];
 
-      const result = [];
-      for (const member of members) {
+    const members = await ctx.db
+      .query("familyMembers")
+      .withIndex("by_familyId", (q) => q.eq("familyId", familyMember.familyId))
+      .collect();
+
+    const membersWithInfo = await Promise.all(
+      members.map(async (member) => {
         const memberUser = await ctx.db.get(member.userId);
-        if (memberUser) {
-          result.push({
-            _id: member._id,
-            userId: member.userId,
-            role: member.role,
-            joinedAt: member.joinedAt,
-            name: memberUser.name ?? "משתמש",
-            email: memberUser.email,
-            imageUrl: memberUser.imageUrl ?? undefined,
-          });
-        }
-      }
+        return {
+          _id: member._id,
+          role: member.role,
+          joinedAt: member.joinedAt,
+          userId: member.userId,
+          name: memberUser?.name ?? memberUser?.email ?? "unknown",
+          email: memberUser?.email ?? "",
+          imageUrl: memberUser?.imageUrl,
+          isOwner: family.ownerId === member.userId,
+          isCurrentUser: member.userId === user._id,
+        };
+      })
+    );
 
-      return result;
-    } catch (error) {
-      console.error("getFamilyMembers error:", error);
-      return [];
-    }
+    return membersWithInfo;
   },
 });
