@@ -24,7 +24,12 @@ class SectionErrorBoundary extends Component<
   }
   render() {
     if (this.state.hasError) {
-      return this.props.fallback ?? null;
+      return this.props.fallback ?? (
+        <div className="bg-red-50 rounded-2xl p-4 text-sm text-red-600 border border-red-200">
+          <p className="font-bold mb-1">שגיאה בטעינת סקשן:</p>
+          <p dir="ltr" className="text-xs font-mono">{this.state.error?.message}</p>
+        </div>
+      );
     }
     return this.props.children;
   }
