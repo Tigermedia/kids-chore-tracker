@@ -384,7 +384,20 @@ function AccountSharingSection() {
 
     setSendingInvite(true);
     try {
+      // 1. Create invite record in Convex DB
       await inviteParent({ email: inviteEmail.trim() });
+
+      // 2. Send Clerk invitation email (best-effort - don't fail if this errors)
+      try {
+        await fetch("/api/invite-parent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: inviteEmail.trim() }),
+        });
+      } catch (emailErr) {
+        console.warn("Clerk invitation email failed (non-critical):", emailErr);
+      }
+
       setInviteSuccess(true);
       setInviteEmail("");
       setTimeout(() => setInviteSuccess(false), 3000);
