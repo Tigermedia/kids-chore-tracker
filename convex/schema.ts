@@ -66,6 +66,12 @@ export default defineSchema({
     requiresPhoto: v.boolean(),
     isActive: v.boolean(),
     isOneTime: v.boolean(),
+    frequency: v.optional(v.union(
+      v.literal("once"),
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly")
+    )),
     category: v.optional(v.string()),
     priority: v.optional(v.string()),
     dueDate: v.optional(v.number()),

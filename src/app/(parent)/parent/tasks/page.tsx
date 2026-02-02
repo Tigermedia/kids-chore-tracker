@@ -12,6 +12,7 @@ const TASK_ICONS = [
 ];
 
 type TimeOfDay = "morning" | "evening" | "special";
+type Frequency = "once" | "daily" | "weekly" | "monthly";
 
 export default function ParentTasksPage() {
   const children = useQuery(api.children.listByFamily);
@@ -23,6 +24,7 @@ export default function ParentTasksPage() {
     icon: string;
     points: number;
     timeOfDay: TimeOfDay;
+    frequency?: Frequency;
   } | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<Id<"taskTemplates"> | null>(null);
 
@@ -85,6 +87,7 @@ export default function ParentTasksPage() {
     icon: string;
     points: number;
     timeOfDay: TimeOfDay;
+    frequency?: Frequency;
     childIds?: Id<"children">[];
   }) => {
     const targetIds = task.childIds && task.childIds.length > 0
@@ -105,6 +108,7 @@ export default function ParentTasksPage() {
     icon: string;
     points: number;
     timeOfDay: TimeOfDay;
+    frequency?: Frequency;
   }) => {
     if (!editingTask) return;
     await updateTemplate({
@@ -247,8 +251,9 @@ function TaskSection({
     icon: string;
     points: number;
     timeOfDay: TimeOfDay;
+    frequency?: Frequency;
   }>;
-  onEdit: (task: { _id: Id<"taskTemplates">; name: string; icon: string; points: number; timeOfDay: TimeOfDay }) => void;
+  onEdit: (task: { _id: Id<"taskTemplates">; name: string; icon: string; points: number; timeOfDay: TimeOfDay; frequency?: Frequency }) => void;
   onDelete: (id: Id<"taskTemplates">) => void;
   emptyMessage: string;
   highlight?: boolean;
@@ -274,7 +279,21 @@ function TaskSection({
                 {task.icon}
               </div>
               <div className="flex-1">
-                <div className="font-medium">{task.name}</div>
+                <div className="font-medium flex items-center gap-2">
+                  {task.name}
+                  {task.frequency && task.frequency !== "daily" && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                      task.frequency === "once" ? "bg-red-100 text-red-600" :
+                      task.frequency === "weekly" ? "bg-blue-100 text-blue-600" :
+                      task.frequency === "monthly" ? "bg-purple-100 text-purple-600" :
+                      ""
+                    }`}>
+                      {task.frequency === "once" ? "חד פעמי" :
+                       task.frequency === "weekly" ? "שבועי" :
+                       task.frequency === "monthly" ? "חודשי" : ""}
+                    </span>
+                  )}
+                </div>
                 <div className="text-sm text-[#22d1c6]">+{task.points} נקודות</div>
               </div>
               <div className="flex gap-2">
@@ -307,8 +326,8 @@ function TaskModal({
   selectedChildId,
   isNew,
 }: {
-  task: { name: string; icon: string; points: number; timeOfDay: TimeOfDay } | null;
-  onSave: (task: { name: string; icon: string; points: number; timeOfDay: TimeOfDay; childIds?: Id<"children">[] }) => void;
+  task: { name: string; icon: string; points: number; timeOfDay: TimeOfDay; frequency?: Frequency } | null;
+  onSave: (task: { name: string; icon: string; points: number; timeOfDay: TimeOfDay; frequency?: Frequency; childIds?: Id<"children">[] }) => void;
   onClose: () => void;
   allChildren?: Array<{ _id: Id<"children">; name: string; avatar: string; theme: string }>;
   selectedChildId?: Id<"children"> | null;
@@ -318,6 +337,7 @@ function TaskModal({
   const [icon, setIcon] = useState(task?.icon ?? "⭐");
   const [points, setPoints] = useState(task?.points ?? 10);
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(task?.timeOfDay ?? "morning");
+  const [frequency, setFrequency] = useState<Frequency>(task?.frequency ?? "daily");
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [selectedChildIds, setSelectedChildIds] = useState<Id<"children">[]>(
     selectedChildId ? [selectedChildId] : []
@@ -335,7 +355,14 @@ function TaskModal({
     e.preventDefault();
     if (!name.trim()) return;
     if (isNew && selectedChildIds.length === 0) return;
-    onSave({ name: name.trim(), icon, points, timeOfDay, childIds: isNew ? selectedChildIds : undefined });
+    onSave({
+      name: name.trim(),
+      icon,
+      points,
+      timeOfDay,
+      frequency: timeOfDay === "special" ? frequency : "daily",
+      childIds: isNew ? selectedChildIds : undefined,
+    });
   };
 
   return (
@@ -398,7 +425,6 @@ function TaskModal({
               value={points}
               onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
               min="1"
-              max="100"
               className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#a29bfe]"
               required
             />
@@ -429,6 +455,35 @@ function TaskModal({
               ))}
             </div>
           </div>
+
+          {/* Frequency (only for special tasks) */}
+          {timeOfDay === "special" && (
+            <div>
+              <label className="block text-sm font-medium mb-2">תדירות</label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { value: "once" as Frequency, label: "חד פעמי", icon: "1️⃣" },
+                  { value: "daily" as Frequency, label: "יומי", icon: "📅" },
+                  { value: "weekly" as Frequency, label: "שבועי", icon: "📆" },
+                  { value: "monthly" as Frequency, label: "חודשי", icon: "🗓️" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setFrequency(option.value)}
+                    className={`p-2 rounded-xl border-2 transition-all text-center ${
+                      frequency === option.value
+                        ? "border-[#ffd93d] bg-[#ffd93d]/10"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="text-lg mb-0.5">{option.icon}</div>
+                    <div className="text-xs font-medium">{option.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Child Selector (only for new tasks) */}
           {isNew && allChildren && allChildren.length > 1 && (

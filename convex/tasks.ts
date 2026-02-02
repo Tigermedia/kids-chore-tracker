@@ -16,6 +16,21 @@ function getYesterdayDate(): string {
   return now.toISOString().split("T")[0];
 }
 
+// Get Monday of the current week (YYYY-MM-DD)
+function getWeekStart(): string {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  const monday = new Date(now.setDate(diff));
+  return monday.toISOString().split("T")[0];
+}
+
+// Get first day of current month (YYYY-MM-DD)
+function getMonthStart(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
 // Get task templates for a child (with family ownership verification)
 export const getTemplates = query({
   args: { childId: v.id("children") },
@@ -80,18 +95,87 @@ export const getTodayTasks = query({
       )
       .collect();
 
-    // Map templates with completion status
-    const tasks = templates.map((template) => {
-      const completion = completions.find(
+    // For frequency-based tasks, get completions since period start
+    const weekStart = getWeekStart();
+    const monthStart = getMonthStart();
+
+    // Map templates with completion status, filtering by frequency
+    const tasksPromises = templates.map(async (template) => {
+      const frequency = template.frequency || "daily";
+
+      // For "once" tasks: check if ever completed
+      if (frequency === "once") {
+        const anyCompletion = await ctx.db
+          .query("taskCompletions")
+          .withIndex("by_taskTemplateId", (q) =>
+            q.eq("taskTemplateId", template._id)
+          )
+          .first();
+        if (anyCompletion) {
+          // Already completed once - deactivate and hide
+          await ctx.db.patch(template._id, { isActive: false });
+          return null;
+        }
+        const todayCompletion = completions.find(
+          (c) => c.taskTemplateId === template._id
+        );
+        return {
+          ...template,
+          isCompleted: !!todayCompletion,
+          completedAt: todayCompletion?.completedAt,
+          completionId: todayCompletion?._id,
+        };
+      }
+
+      // For "weekly" tasks: check if completed this week
+      if (frequency === "weekly") {
+        const weekCompletions = await ctx.db
+          .query("taskCompletions")
+          .withIndex("by_taskTemplateId", (q) =>
+            q.eq("taskTemplateId", template._id)
+          )
+          .filter((q) => q.gte(q.field("date"), weekStart))
+          .first();
+        return {
+          ...template,
+          isCompleted: !!weekCompletions,
+          completedAt: weekCompletions?.completedAt,
+          completionId: weekCompletions?._id,
+        };
+      }
+
+      // For "monthly" tasks: check if completed this month
+      if (frequency === "monthly") {
+        const monthCompletions = await ctx.db
+          .query("taskCompletions")
+          .withIndex("by_taskTemplateId", (q) =>
+            q.eq("taskTemplateId", template._id)
+          )
+          .filter((q) => q.gte(q.field("date"), monthStart))
+          .first();
+        return {
+          ...template,
+          isCompleted: !!monthCompletions,
+          completedAt: monthCompletions?.completedAt,
+          completionId: monthCompletions?._id,
+        };
+      }
+
+      // Default "daily": check today only
+      const todayCompletion = completions.find(
         (c) => c.taskTemplateId === template._id
       );
       return {
         ...template,
-        isCompleted: !!completion,
-        completedAt: completion?.completedAt,
-        completionId: completion?._id,
+        isCompleted: !!todayCompletion,
+        completedAt: todayCompletion?.completedAt,
+        completionId: todayCompletion?._id,
       };
     });
+
+    const tasks = (await Promise.all(tasksPromises)).filter(
+      (t): t is NonNullable<typeof t> => t !== null
+    );
 
     return tasks;
   },
@@ -232,9 +316,17 @@ export const createTemplate = mutation({
     hasTimer: v.optional(v.boolean()),
     timerMinutes: v.optional(v.number()),
     requiresPhoto: v.optional(v.boolean()),
+    frequency: v.optional(v.union(
+      v.literal("once"),
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly")
+    )),
   },
   handler: async (ctx, args) => {
     await verifyChildAccess(ctx, args.childId);
+
+    const frequency = args.frequency ?? "daily";
 
     const templateId = await ctx.db.insert("taskTemplates", {
       childId: args.childId,
@@ -246,7 +338,8 @@ export const createTemplate = mutation({
       timerMinutes: args.timerMinutes,
       requiresPhoto: args.requiresPhoto ?? false,
       isActive: true,
-      isOneTime: false,
+      isOneTime: frequency === "once",
+      frequency: frequency,
       createdAt: Date.now(),
     });
 
@@ -269,6 +362,12 @@ export const updateTemplate = mutation({
       )
     ),
     isActive: v.optional(v.boolean()),
+    frequency: v.optional(v.union(
+      v.literal("once"),
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly")
+    )),
   },
   handler: async (ctx, args) => {
     // Get the template to find the childId for verification

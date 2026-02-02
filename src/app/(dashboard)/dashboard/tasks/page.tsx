@@ -176,6 +176,7 @@ function TaskItem({
     icon: string;
     points: number;
     isCompleted: boolean;
+    frequency?: string;
   };
   onToggle: () => void;
 }) {
