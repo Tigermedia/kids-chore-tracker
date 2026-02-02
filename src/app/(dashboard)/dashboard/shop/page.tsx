@@ -1,10 +1,73 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { useChild } from "../../../../contexts/ChildContext";
+
+function RewardCard({
+  reward,
+  canAfford,
+  onBuy,
+}: {
+  reward: { _id: Id<"rewards">; icon: string; name: string; description?: string; cost: number };
+  canAfford: boolean;
+  onBuy: () => void;
+}) {
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const handleSpeak = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(reward.name);
+      utterance.lang = "he-IL";
+      utterance.rate = 0.9;
+
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [reward.name]
+  );
+
+  return (
+    <button
+      onClick={() => canAfford && onBuy()}
+      disabled={!canAfford}
+      className={`p-4 rounded-xl border-2 transition-all text-center relative ${
+        canAfford
+          ? "border-[#ffd93d] hover:bg-yellow-50 hover:shadow-md cursor-pointer"
+          : "border-gray-200 opacity-50 cursor-not-allowed"
+      }`}
+    >
+      <div className="text-4xl mb-2">{reward.icon}</div>
+      <span
+        onClick={handleSpeak}
+        className={`absolute top-2 left-2 inline-flex items-center justify-center w-7 h-7 rounded-full text-base cursor-pointer hover:bg-gray-200 transition-all ${
+          isSpeaking ? "animate-pulse bg-blue-100" : ""
+        }`}
+        role="button"
+        aria-label="הקרא שם פרס"
+      >
+        🔊
+      </span>
+      <div className="font-bold text-sm mb-1">{reward.name}</div>
+      <div className="text-xs text-gray-500 mb-2 line-clamp-2">
+        {reward.description}
+      </div>
+      <div
+        className={`font-bold ${canAfford ? "text-[#ffd93d]" : "text-gray-400"}`}
+      >
+        ⭐ {reward.cost}
+      </div>
+    </button>
+  );
+}
 
 export default function ShopPage() {
   const { selectedChild, children, isLoading } = useChild();
@@ -107,27 +170,12 @@ export default function ShopPage() {
             {rewards.map((reward) => {
               const canAfford = selectedChild.totalPoints >= reward.cost;
               return (
-                <button
+                <RewardCard
                   key={reward._id}
-                  onClick={() => canAfford && setShowConfirm(reward._id)}
-                  disabled={!canAfford}
-                  className={`p-4 rounded-xl border-2 transition-all text-center ${
-                    canAfford
-                      ? "border-[#ffd93d] hover:bg-yellow-50 hover:shadow-md cursor-pointer"
-                      : "border-gray-200 opacity-50 cursor-not-allowed"
-                  }`}
-                >
-                  <div className="text-4xl mb-2">{reward.icon}</div>
-                  <div className="font-bold text-sm mb-1">{reward.name}</div>
-                  <div className="text-xs text-gray-500 mb-2 line-clamp-2">
-                    {reward.description}
-                  </div>
-                  <div
-                    className={`font-bold ${canAfford ? "text-[#ffd93d]" : "text-gray-400"}`}
-                  >
-                    ⭐ {reward.cost}
-                  </div>
-                </button>
+                  reward={reward}
+                  canAfford={canAfford}
+                  onBuy={() => setShowConfirm(reward._id)}
+                />
               );
             })}
           </div>
