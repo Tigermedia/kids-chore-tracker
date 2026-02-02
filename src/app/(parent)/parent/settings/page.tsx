@@ -1,11 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component, ReactNode } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { PinInput } from "../../../../components/pin/PinInput";
+
+// Error boundary wrapper for new sections
+class SectionErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error: Error) {
+    console.error("Section error:", error);
+  }
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback ?? null;
+    }
+    return this.props.children;
+  }
+}
 
 export default function SettingsPage() {
   const { user } = useUser();
@@ -307,10 +330,14 @@ export default function SettingsPage() {
       </div>
 
       {/* Account Sharing */}
-      <AccountSharingSection />
+      <SectionErrorBoundary>
+        <AccountSharingSection />
+      </SectionErrorBoundary>
 
       {/* Pending Invites for Current User */}
-      <PendingInvitesSection />
+      <SectionErrorBoundary>
+        <PendingInvitesSection />
+      </SectionErrorBoundary>
 
       {/* Sign Out */}
       <div className="bg-white rounded-2xl p-6 shadow-sm">
