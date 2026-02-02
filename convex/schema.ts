@@ -180,6 +180,22 @@ export default defineSchema({
     .index("by_parentId", ["parentId"])
     .index("by_childId_acknowledged", ["childId", "isAcknowledged"]),
 
+  // Family Invites (account sharing)
+  familyInvites: defineTable({
+    familyId: v.id("families"),
+    invitedEmail: v.string(),
+    invitedBy: v.id("users"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined")
+    ),
+    createdAt: v.number(),
+    acceptedAt: v.optional(v.number()),
+  })
+    .index("by_familyId", ["familyId"])
+    .index("by_invitedEmail", ["invitedEmail"]),
+
   // In-App Notifications
   notifications: defineTable({
     childId: v.id("children"),

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-02-03
+
+### Added
+
+- **Audio Playback for Tasks (הקראת משימות)**: For kids who can't read yet
+  - 🔊 speaker button next to each task name in the child dashboard
+  - Tapping the button reads the task name aloud using the Web Speech API in Hebrew (`he-IL`)
+  - Pulse animation visual feedback while audio is playing
+  - Button uses `stopPropagation()` to avoid triggering task completion toggle
+
+- **Account Sharing (שיתוף חשבון)**: Invite another parent to share your family account
+  - New `familyInvites` table in schema for tracking invite state
+  - Backend: `inviteParent`, `getPendingInvites`, `getMyInvites`, `acceptInvite`, `declineInvite`, `cancelInvite`, `removeFamilyMember`, `getFamilyMembers` in `convex/families.ts`
+  - Settings page: new "שיתוף חשבון" section showing family members, pending invites, and invite form
+  - Settings page: "הזמנות שהתקבלו" section for users who received invites
+  - Owner can remove non-owner members from the family
+  - When an invited user accepts, their empty auto-created family is cleaned up
+  - Removed members automatically get a new empty family so they aren't locked out
+
 ## [1.3.0] - 2026-02-01
 
 ### Added

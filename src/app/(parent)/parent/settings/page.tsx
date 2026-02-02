@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { api } from "../../../../../convex/_generated/api";
+import { Id } from "../../../../../convex/_generated/dataModel";
 import { PinInput } from "../../../../components/pin/PinInput";
 
 export default function SettingsPage() {
@@ -305,6 +306,12 @@ export default function SettingsPage() {
         )}
       </div>
 
+      {/* Account Sharing */}
+      <AccountSharingSection />
+
+      {/* Pending Invites for Current User */}
+      <PendingInvitesSection />
+
       {/* Sign Out */}
       <div className="bg-white rounded-2xl p-6 shadow-sm">
         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -318,6 +325,259 @@ export default function SettingsPage() {
         >
           התנתק
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ===== Account Sharing Section =====
+function AccountSharingSection() {
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState(false);
+
+  const familyMembers = useQuery(api.families.getFamilyMembers);
+  const pendingInvites = useQuery(api.families.getPendingInvites);
+  const inviteParent = useMutation(api.families.inviteParent);
+  const cancelInvite = useMutation(api.families.cancelInvite);
+  const removeFamilyMember = useMutation(api.families.removeFamilyMember);
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteError("");
+    setInviteSuccess(false);
+
+    if (!inviteEmail.trim()) return;
+
+    setSendingInvite(true);
+    try {
+      await inviteParent({ email: inviteEmail.trim() });
+      setInviteSuccess(true);
+      setInviteEmail("");
+      setTimeout(() => setInviteSuccess(false), 3000);
+    } catch (error: any) {
+      setInviteError(error.message || "שגיאה בשליחת ההזמנה");
+    }
+    setSendingInvite(false);
+  };
+
+  const handleCancelInvite = async (inviteId: Id<"familyInvites">) => {
+    try {
+      await cancelInvite({ inviteId });
+    } catch (error: any) {
+      console.error("Failed to cancel invite:", error);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: Id<"familyMembers">, name: string) => {
+    if (!confirm(`האם להסיר את ${name} מהמשפחה?`)) return;
+    try {
+      await removeFamilyMember({ memberId });
+    } catch (error: any) {
+      console.error("Failed to remove member:", error);
+    }
+  };
+
+  const roleLabel = (role: string) => {
+    switch (role) {
+      case "owner":
+        return "בעלים";
+      case "parent":
+        return "הורה";
+      case "viewer":
+        return "צופה";
+      default:
+        return role;
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm">
+      <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+        <span className="material-symbols-outlined text-[#a29bfe]">group_add</span>
+        שיתוף חשבון
+      </h2>
+
+      {/* Current Family Members */}
+      {familyMembers && familyMembers.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-gray-500 mb-3">חברי משפחה</h3>
+          <div className="space-y-2">
+            {familyMembers.map((member) => (
+              <div
+                key={member._id}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#a29bfe] text-white flex items-center justify-center text-sm font-bold">
+                    {member.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">{member.name}</div>
+                    <div className="text-xs text-gray-400">{member.email}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs bg-gray-200 px-2 py-1 rounded-full">
+                    {roleLabel(member.role)}
+                  </span>
+                  {member.role !== "owner" && (
+                    <button
+                      onClick={() => handleRemoveMember(member._id, member.name)}
+                      className="text-red-400 hover:text-red-600 transition-colors"
+                      title="הסר מהמשפחה"
+                    >
+                      <span className="material-symbols-outlined text-lg">
+                        person_remove
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pending Invites (sent) */}
+      {pendingInvites && pendingInvites.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-gray-500 mb-3">הזמנות ממתינות</h3>
+          <div className="space-y-2">
+            {pendingInvites.map((invite) => (
+              <div
+                key={invite._id}
+                className="flex items-center justify-between p-3 bg-yellow-50 rounded-xl border border-yellow-100"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-yellow-500">
+                    schedule
+                  </span>
+                  <span className="text-sm">{invite.invitedEmail}</span>
+                </div>
+                <button
+                  onClick={() => handleCancelInvite(invite._id)}
+                  className="text-gray-400 hover:text-red-500 transition-colors"
+                  title="בטל הזמנה"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Invite Form */}
+      <form onSubmit={handleInvite} className="space-y-3">
+        <h3 className="text-sm font-medium text-gray-500">הזמן הורה נוסף</h3>
+        <div className="flex gap-2">
+          <input
+            type="email"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            placeholder="כתובת אימייל"
+            className="flex-1 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#a29bfe]"
+            dir="ltr"
+          />
+          <button
+            type="submit"
+            disabled={sendingInvite || !inviteEmail.trim()}
+            className="px-4 py-2 bg-[#a29bfe] text-white rounded-xl hover:bg-[#8b84e8] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {sendingInvite ? (
+              <span className="material-symbols-outlined text-sm animate-spin">
+                hourglass_empty
+              </span>
+            ) : (
+              "הזמן"
+            )}
+          </button>
+        </div>
+
+        {inviteError && (
+          <p className="text-red-500 text-sm">{inviteError}</p>
+        )}
+        {inviteSuccess && (
+          <p className="text-green-600 text-sm">ההזמנה נשלחה בהצלחה!</p>
+        )}
+      </form>
+    </div>
+  );
+}
+
+// ===== Pending Invites for Current User (received invites) =====
+function PendingInvitesSection() {
+  const myInvites = useQuery(api.families.getMyInvites);
+  const acceptInvite = useMutation(api.families.acceptInvite);
+  const declineInvite = useMutation(api.families.declineInvite);
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  if (!myInvites || myInvites.length === 0) return null;
+
+  const handleAccept = async (inviteId: Id<"familyInvites">) => {
+    if (
+      !confirm(
+        "קבלת ההזמנה תעביר אותך למשפחה החדשה. אם יש לך משפחה קיימת ללא ילדים, היא תימחק. להמשיך?"
+      )
+    )
+      return;
+
+    setProcessing(inviteId);
+    try {
+      await acceptInvite({ inviteId });
+    } catch (error: any) {
+      console.error("Failed to accept invite:", error);
+    }
+    setProcessing(null);
+  };
+
+  const handleDecline = async (inviteId: Id<"familyInvites">) => {
+    setProcessing(inviteId);
+    try {
+      await declineInvite({ inviteId });
+    } catch (error: any) {
+      console.error("Failed to decline invite:", error);
+    }
+    setProcessing(null);
+  };
+
+  return (
+    <div className="bg-blue-50 rounded-2xl p-6 shadow-sm border border-blue-200">
+      <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+        <span className="material-symbols-outlined text-blue-500">mail</span>
+        הזמנות שהתקבלו
+      </h2>
+      <div className="space-y-3">
+        {myInvites.map((invite) => (
+          <div
+            key={invite._id}
+            className="bg-white p-4 rounded-xl border border-blue-100"
+          >
+            <div className="mb-3">
+              <div className="font-medium">
+                {invite.inviterName} מזמין אותך להצטרף ל{invite.familyName}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleAccept(invite._id)}
+                disabled={processing === invite._id}
+                className="flex-1 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-medium disabled:opacity-50"
+              >
+                {processing === invite._id ? "מעבד..." : "קבל"}
+              </button>
+              <button
+                onClick={() => handleDecline(invite._id)}
+                disabled={processing === invite._id}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                דחה
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -179,6 +179,28 @@ function TaskItem({
   };
   onToggle: () => void;
 }) {
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const handleSpeak = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(task.name);
+      utterance.lang = "he-IL";
+      utterance.rate = 0.9;
+
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [task.name]
+  );
+
   return (
     <button
       onClick={onToggle}
@@ -196,10 +218,22 @@ function TaskItem({
         {task.isCompleted ? "✅" : task.icon}
       </div>
       <div className="flex-1 text-right">
-        <div
-          className={`font-medium ${task.isCompleted ? "line-through text-gray-400" : ""}`}
-        >
-          {task.name}
+        <div className="flex items-center gap-2">
+          <span
+            className={`font-medium ${task.isCompleted ? "line-through text-gray-400" : ""}`}
+          >
+            {task.name}
+          </span>
+          <span
+            onClick={handleSpeak}
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-base cursor-pointer hover:bg-gray-200 transition-all ${
+              isSpeaking ? "animate-pulse bg-blue-100" : ""
+            }`}
+            role="button"
+            aria-label="הקרא שם משימה"
+          >
+            🔊
+          </span>
         </div>
         <div className="text-sm text-[#22d1c6]">+{task.points} נקודות</div>
       </div>
