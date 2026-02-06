@@ -117,6 +117,7 @@ export default function ParentLayout({
     { href: "/parent", label: "סקירה כללית", icon: "dashboard" },
     { href: "/parent/children", label: "ניהול ילדים", icon: "people" },
     { href: "/parent/tasks", label: "ניהול משימות", icon: "task_alt" },
+    { href: "/parent/add-points", label: "הוספת נקודות", icon: "add_circle" },
     { href: "/parent/reduce-points", label: "הורדת נקודות", icon: "remove_circle" },
     { href: "/parent/rewards", label: "ניהול פרסים", icon: "card_giftcard" },
     { href: "/parent/reports", label: "דוחות", icon: "analytics" },
