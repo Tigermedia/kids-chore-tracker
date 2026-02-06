@@ -186,6 +186,21 @@ export default defineSchema({
     .index("by_parentId", ["parentId"])
     .index("by_childId_acknowledged", ["childId", "isAcknowledged"]),
 
+  // Point Additions (Parent bonus system)
+  pointAdditions: defineTable({
+    childId: v.id("children"),
+    parentId: v.id("users"),
+    points: v.number(),
+    reason: v.string(),
+    imageStorageId: v.optional(v.id("_storage")),
+    createdAt: v.number(),
+    isAcknowledged: v.boolean(),
+    acknowledgedAt: v.optional(v.number()),
+  })
+    .index("by_childId", ["childId"])
+    .index("by_parentId", ["parentId"])
+    .index("by_childId_acknowledged", ["childId", "isAcknowledged"]),
+
   // Family Invites (account sharing)
   familyInvites: defineTable({
     familyId: v.id("families"),
@@ -207,6 +222,7 @@ export default defineSchema({
     childId: v.id("children"),
     type: v.union(
       v.literal("point_reduction"),
+      v.literal("point_addition"),
       v.literal("achievement"),
       v.literal("level_up"),
       v.literal("challenge_complete"),

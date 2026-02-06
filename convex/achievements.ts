@@ -8,27 +8,56 @@ export const ACHIEVEMENT_DEFINITIONS = [
   { id: "tasks_10", name: "מתחיל", icon: "⭐", description: "השלמת 10 משימות", category: "tasks" },
   { id: "tasks_50", name: "חרוץ", icon: "💫", description: "השלמת 50 משימות", category: "tasks" },
   { id: "tasks_100", name: "כוכב", icon: "🏆", description: "השלמת 100 משימות", category: "tasks" },
+  { id: "tasks_250", name: "מקצוען", icon: "🥇", description: "השלמת 250 משימות", category: "tasks" },
   { id: "tasks_500", name: "אלוף", icon: "👑", description: "השלמת 500 משימות", category: "tasks" },
+  { id: "tasks_1000", name: "אגדה", icon: "🦸", description: "השלמת 1000 משימות", category: "tasks" },
 
   // Streak achievements
   { id: "streak_3", name: "רצף קטן", icon: "🔥", description: "3 ימים ברצף", category: "streak" },
   { id: "streak_7", name: "שבוע מושלם", icon: "🔥", description: "7 ימים ברצף", category: "streak" },
   { id: "streak_14", name: "שבועיים!", icon: "🔥", description: "14 ימים ברצף", category: "streak" },
+  { id: "streak_21", name: "שלושה שבועות!", icon: "🔥", description: "21 ימים ברצף", category: "streak" },
   { id: "streak_30", name: "חודש מדהים", icon: "🔥", description: "30 ימים ברצף", category: "streak" },
+  { id: "streak_60", name: "חודשיים!", icon: "💪", description: "60 ימים ברצף", category: "streak" },
+  { id: "streak_100", name: "מאה ימים!", icon: "🏅", description: "100 ימים ברצף", category: "streak" },
 
   // Points achievements
   { id: "points_100", name: "אספן מתחיל", icon: "💰", description: "אספת 100 נקודות", category: "points" },
   { id: "points_500", name: "אספן מקצועי", icon: "💰", description: "אספת 500 נקודות", category: "points" },
   { id: "points_1000", name: "עשיר", icon: "💎", description: "אספת 1000 נקודות", category: "points" },
+  { id: "points_2500", name: "מיליונר קטן", icon: "💵", description: "אספת 2500 נקודות", category: "points" },
+  { id: "points_5000", name: "עשיר מופלג", icon: "🤑", description: "אספת 5000 נקודות", category: "points" },
 
   // Level achievements
   { id: "level_5", name: "מתקדם", icon: "📈", description: "הגעת לרמה 5", category: "level" },
   { id: "level_10", name: "מומחה", icon: "🎓", description: "הגעת לרמה 10", category: "level" },
+  { id: "level_15", name: "שליט המשימות", icon: "🏰", description: "הגעת לרמה 15", category: "level" },
+  { id: "level_20", name: "גראנד מאסטר", icon: "🧙", description: "הגעת לרמה 20", category: "level" },
 
   // Special achievements
   { id: "perfect_day", name: "יום מושלם", icon: "✨", description: "השלמת כל המשימות ביום אחד", category: "special" },
+  { id: "perfect_week", name: "שבוע מושלם", icon: "🌈", description: "7 ימים מושלמים ברצף", category: "special" },
   { id: "early_bird", name: "ציפור מוקדמת", icon: "🐦", description: "השלמת משימות בוקר לפני 8:00", category: "special" },
+  { id: "night_owl", name: "ינשוף לילה", icon: "🦉", description: "השלמת משימות ערב אחרי 20:00", category: "special" },
   { id: "first_purchase", name: "קונה ראשון", icon: "🛒", description: "רכשת פרס ראשון", category: "special" },
+  { id: "big_spender", name: "קונה גדול", icon: "🎁", description: "רכשת 10 פרסים", category: "special" },
+  { id: "speed_demon", name: "מהיר כברק", icon: "⚡", description: "השלמת 5 משימות ביום אחד", category: "special" },
+  { id: "super_speed", name: "סופר מהיר", icon: "🚀", description: "השלמת 10 משימות ביום אחד", category: "special" },
+
+  // Helper achievements
+  { id: "helper", name: "עוזר מצוין", icon: "🤝", description: "קיבלת בונוס נקודות מההורים", category: "helper" },
+  { id: "super_helper", name: "סופר עוזר", icon: "🦸‍♂️", description: "קיבלת 5 בונוסים מההורים", category: "helper" },
+  { id: "family_hero", name: "גיבור המשפחה", icon: "🏠", description: "קיבלת 10 בונוסים מההורים", category: "helper" },
+
+  // Morning/Evening achievements
+  { id: "morning_master", name: "אלוף הבוקר", icon: "🌅", description: "השלמת 50 משימות בוקר", category: "time" },
+  { id: "evening_star", name: "כוכב הערב", icon: "🌙", description: "השלמת 50 משימות ערב", category: "time" },
+  { id: "weekend_warrior", name: "לוחם סופ\"ש", icon: "🎮", description: "השלמת משימות בכל סופי שבוע במשך חודש", category: "time" },
+
+  // Bonus achievements
+  { id: "comeback_kid", name: "חזרה מנצחת", icon: "🔄", description: "חזרת אחרי הפסקה של שבוע", category: "special" },
+  { id: "no_deductions", name: "ילד מושלם", icon: "😇", description: "חודש בלי הורדת נקודות", category: "special" },
+  { id: "savings_pro", name: "חוסך מקצועי", icon: "🏦", description: "צברת 500 נקודות בלי לקנות כלום", category: "special" },
 ];
 
 // Get all achievements for a child
@@ -266,23 +295,43 @@ export const checkAndUnlockInternal = internalMutation({
     if (child.totalTasksCompleted >= 10) await tryUnlock("tasks_10");
     if (child.totalTasksCompleted >= 50) await tryUnlock("tasks_50");
     if (child.totalTasksCompleted >= 100) await tryUnlock("tasks_100");
+    if (child.totalTasksCompleted >= 250) await tryUnlock("tasks_250");
     if (child.totalTasksCompleted >= 500) await tryUnlock("tasks_500");
+    if (child.totalTasksCompleted >= 1000) await tryUnlock("tasks_1000");
 
     // Streak achievements
     if (child.currentStreak >= 3) await tryUnlock("streak_3");
     if (child.currentStreak >= 7) await tryUnlock("streak_7");
     if (child.currentStreak >= 14) await tryUnlock("streak_14");
+    if (child.currentStreak >= 21) await tryUnlock("streak_21");
     if (child.currentStreak >= 30) await tryUnlock("streak_30");
+    if (child.currentStreak >= 60) await tryUnlock("streak_60");
+    if (child.currentStreak >= 100) await tryUnlock("streak_100");
 
     // Points achievements
     if (child.totalPoints >= 100) await tryUnlock("points_100");
     if (child.totalPoints >= 500) await tryUnlock("points_500");
     if (child.totalPoints >= 1000) await tryUnlock("points_1000");
+    if (child.totalPoints >= 2500) await tryUnlock("points_2500");
+    if (child.totalPoints >= 5000) await tryUnlock("points_5000");
 
     // Level achievements (XP-based: 100 XP per level)
     const level = Math.floor(child.xp / 100) + 1;
     if (level >= 5) await tryUnlock("level_5");
     if (level >= 10) await tryUnlock("level_10");
+    if (level >= 15) await tryUnlock("level_15");
+    if (level >= 20) await tryUnlock("level_20");
+
+    // Helper achievements (based on point additions from parents)
+    const pointAdditions = await ctx.db
+      .query("pointAdditions")
+      .withIndex("by_childId", (q) => q.eq("childId", args.childId))
+      .collect();
+    
+    const additionCount = pointAdditions.length;
+    if (additionCount >= 1) await tryUnlock("helper");
+    if (additionCount >= 5) await tryUnlock("super_helper");
+    if (additionCount >= 10) await tryUnlock("family_hero");
 
     // Create notifications for new achievements
     for (const achievementId of unlocked) {

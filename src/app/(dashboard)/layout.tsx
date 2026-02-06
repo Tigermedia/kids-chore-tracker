@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
@@ -9,12 +9,17 @@ import { APP_VERSION } from "../../lib/version";
 import { ChildProvider, useChild } from "../../contexts/ChildContext";
 import { ChildSelectScreen } from "../../components/child-select/ChildSelectScreen";
 import { PinModal } from "../../components/pin/PinModal";
+import { useTTS } from "../../hooks/useTTS";
+import { SpeakerButton } from "../../components/tts/SpeakerButton";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [userEnsured, setUserEnsured] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSwitchPin, setShowSwitchPin] = useState(false);
   const { selectedChild, selectedChildId, children: childrenList, clearChild, isLoading } = useChild();
+  const { speak } = useTTS();
+  const lastNotificationCount = useRef(0);
+  const spokenNotifications = useRef<Set<string>>(new Set());
 
   // Clear parent mode session when entering child dashboard
   // This ensures PIN is always required when switching to parent mode
@@ -37,6 +42,29 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   );
 
   const unreadCount = unreadNotifications?.length ?? 0;
+
+  // Auto-speak new point notifications
+  useEffect(() => {
+    if (!unreadNotifications || unreadNotifications.length === 0) return;
+
+    // Find new notifications that should be spoken
+    unreadNotifications.forEach((notification) => {
+      const notificationId = notification._id;
+      
+      // Skip if already spoken
+      if (spokenNotifications.current.has(notificationId)) return;
+      
+      // Only auto-speak point additions and reductions
+      if (notification.type === "point_addition" || notification.type === "point_reduction") {
+        spokenNotifications.current.add(notificationId);
+        
+        // Small delay to ensure the UI is ready
+        setTimeout(() => {
+          speak(notification.message);
+        }, 500);
+      }
+    });
+  }, [unreadNotifications, speak]);
 
   // Ensure user and family exist (fallback if webhook didn't work)
   useEffect(() => {
@@ -153,12 +181,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                       unreadNotifications.map((notification) => (
                         <div
                           key={notification._id}
-                          className="p-4 border-b hover:bg-gray-50 cursor-pointer"
-                          onClick={() => markAsRead({ notificationId: notification._id })}
+                          className="p-4 border-b hover:bg-gray-50"
                         >
                           <div className="flex items-start gap-3">
                             <div className="text-2xl">
                               {notification.type === "point_reduction" && "⚠️"}
+                              {notification.type === "point_addition" && "🎉"}
                               {notification.type === "achievement" && "🏆"}
                               {notification.type === "level_up" && "⬆️"}
                               {notification.type === "reward_available" && "🎁"}
@@ -168,8 +196,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                             <div className="flex-1">
                               <div className="font-medium text-sm">{notification.title}</div>
                               <div className="text-xs text-gray-500">{notification.message}</div>
-                              <div className="text-xs text-gray-400 mt-1">
-                                {new Date(notification.createdAt).toLocaleString("he-IL")}
+                              <div className="text-xs text-gray-400 mt-1 flex items-center justify-between">
+                                <span>{new Date(notification.createdAt).toLocaleString("he-IL")}</span>
+                                <div className="flex items-center gap-2">
+                                  <SpeakerButton text={notification.message} size="sm" />
+                                  <button
+                                    onClick={() => markAsRead({ notificationId: notification._id })}
+                                    className="text-[#22d1c6] hover:underline text-xs"
+                                  >
+                                    ✓ קראתי
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>

@@ -91,13 +91,26 @@ export default function ParentDashboard() {
       {/* Quick Actions */}
       <div className="grid md:grid-cols-3 gap-4">
         <Link
+          href="/parent/add-points"
+          className="bg-[#22d1c6] text-white rounded-2xl p-6 hover:shadow-lg transition-all card-hover"
+        >
+          <span className="material-symbols-outlined text-4xl mb-2">
+            add_circle
+          </span>
+          <div className="font-bold text-lg">הוספת נקודות 🔊</div>
+          <div className="text-white/80 text-sm">
+            תן בונוס לילד עם הודעה קולית
+          </div>
+        </Link>
+
+        <Link
           href="/parent/reduce-points"
           className="bg-[#ff6b6b] text-white rounded-2xl p-6 hover:shadow-lg transition-all card-hover"
         >
           <span className="material-symbols-outlined text-4xl mb-2">
             remove_circle
           </span>
-          <div className="font-bold text-lg">הורדת נקודות</div>
+          <div className="font-bold text-lg">הורדת נקודות 🔊</div>
           <div className="text-white/80 text-sm">
             הורד נקודות מילד עם הסבר
           </div>
