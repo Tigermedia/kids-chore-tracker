@@ -112,8 +112,8 @@ export const getTodayTasks = query({
           )
           .first();
         if (anyCompletion) {
-          // Already completed once - deactivate and hide
-          await ctx.db.patch(template._id, { isActive: false });
+          // Already completed once - hide from list
+          // Note: deactivation happens in completeTask mutation
           return null;
         }
         const todayCompletion = completions.find(

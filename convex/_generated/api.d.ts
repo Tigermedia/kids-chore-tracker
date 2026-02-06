@@ -15,6 +15,7 @@ import type * as dailyRewards from "../dailyRewards.js";
 import type * as families from "../families.js";
 import type * as lib from "../lib.js";
 import type * as notifications from "../notifications.js";
+import type * as pointAdditions from "../pointAdditions.js";
 import type * as pointReductions from "../pointReductions.js";
 import type * as rewards from "../rewards.js";
 import type * as tasks from "../tasks.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   families: typeof families;
   lib: typeof lib;
   notifications: typeof notifications;
+  pointAdditions: typeof pointAdditions;
   pointReductions: typeof pointReductions;
   rewards: typeof rewards;
   tasks: typeof tasks;
