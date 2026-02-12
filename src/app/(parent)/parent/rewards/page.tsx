@@ -13,10 +13,19 @@ export default function ManageRewardsPage() {
   const deleteReward = useMutation(api.rewards.deleteReward);
   const redeemPurchase = useMutation(api.rewards.redeem);
 
+  const parentRedeemMutation = useMutation(api.rewards.parentRedeem);
+
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [editingReward, setEditingReward] = useState<Id<"rewards"> | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Id<"rewards"> | null>(null);
   const [selectedChildId, setSelectedChildId] = useState<Id<"children"> | null>(null);
+
+  // Parent redeem state
+  const [redeemRewardId, setRedeemRewardId] = useState<Id<"rewards"> | null>(null);
+  const [redeemChildIds, setRedeemChildIds] = useState<Id<"children">[]>([]);
+  const [redeemLoading, setRedeemLoading] = useState(false);
+  const [redeemResults, setRedeemResults] = useState<{ childName: string; success: boolean; error?: string }[] | null>(null);
 
   const [formName, setFormName] = useState("");
   const [formIcon, setFormIcon] = useState("🎁");
@@ -88,6 +97,37 @@ export default function ManageRewardsPage() {
     setFormIcon("🎁");
     setFormDescription("");
     setFormCost(50);
+  };
+
+  const handleParentRedeem = async () => {
+    if (!redeemRewardId || redeemChildIds.length === 0) return;
+    setRedeemLoading(true);
+    try {
+      const results = await parentRedeemMutation({
+        rewardId: redeemRewardId,
+        childIds: redeemChildIds,
+      });
+      setRedeemResults(results);
+    } catch (e) {
+      setRedeemResults([{ childName: "?", success: false, error: String(e) }]);
+    } finally {
+      setRedeemLoading(false);
+    }
+  };
+
+  const toggleRedeemChild = (childId: Id<"children">) => {
+    setRedeemChildIds((prev) =>
+      prev.includes(childId)
+        ? prev.filter((id) => id !== childId)
+        : [...prev, childId]
+    );
+  };
+
+  const openRedeemModal = (rewardId: Id<"rewards">) => {
+    setRedeemRewardId(rewardId);
+    setRedeemChildIds([]);
+    setRedeemResults(null);
+    setShowRedeemModal(true);
   };
 
   if (!rewards || !children) {
@@ -201,21 +241,31 @@ export default function ManageRewardsPage() {
                     ⭐ {reward.cost}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openEditModal(reward)}
-                    className="flex-1 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200 transition-colors"
-                  >
-                    ערוך
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(reward._id)}
-                    className="p-2 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-red-500 text-sm">
-                      delete
-                    </span>
-                  </button>
+                <div className="flex flex-col gap-2">
+                  {reward.isActive && (
+                    <button
+                      onClick={() => openRedeemModal(reward._id)}
+                      className="w-full py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
+                    >
+                      🎁 ממש לילד
+                    </button>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openEditModal(reward)}
+                      className="flex-1 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+                    >
+                      ערוך
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(reward._id)}
+                      className="p-2 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-red-500 text-sm">
+                        delete
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -366,6 +416,140 @@ export default function ManageRewardsPage() {
           </div>
         </div>
       )}
+
+      {/* Parent Redeem Modal */}
+      {showRedeemModal && redeemRewardId && (() => {
+        const reward = rewards?.find((r) => r._id === redeemRewardId);
+        if (!reward) return null;
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+              {redeemResults ? (
+                // Results view
+                <>
+                  <div className="text-center mb-6">
+                    <div className="text-5xl mb-3">
+                      {redeemResults.every((r) => r.success) ? "✅" : "⚠️"}
+                    </div>
+                    <h2 className="text-xl font-bold">תוצאות מימוש</h2>
+                  </div>
+                  <div className="space-y-3 mb-6">
+                    {redeemResults.map((result, i) => (
+                      <div
+                        key={i}
+                        className={`p-3 rounded-xl flex items-center justify-between ${
+                          result.success
+                            ? "bg-green-50 border border-green-200"
+                            : "bg-red-50 border border-red-200"
+                        }`}
+                      >
+                        <span className="font-medium">{result.childName}</span>
+                        <span className="text-sm">
+                          {result.success ? (
+                            <span className="text-green-600">✓ מומש בהצלחה</span>
+                          ) : (
+                            <span className="text-red-600">{result.error}</span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowRedeemModal(false);
+                      setRedeemResults(null);
+                    }}
+                    className="w-full py-3 bg-[#a29bfe] text-white rounded-xl font-bold hover:bg-[#8b84e8] transition-colors"
+                  >
+                    סגור
+                  </button>
+                </>
+              ) : (
+                // Selection view
+                <>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold">מימוש פרס לילד</h2>
+                    <button
+                      onClick={() => setShowRedeemModal(false)}
+                      className="p-2 hover:bg-gray-100 rounded-full"
+                    >
+                      <span className="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+
+                  {/* Selected reward */}
+                  <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 text-center mb-6">
+                    <div className="text-4xl mb-2">{reward.icon}</div>
+                    <div className="font-bold text-lg">{reward.name}</div>
+                    <div className="text-sm text-gray-500">{reward.description}</div>
+                    <div className="text-lg font-bold text-[#ffd93d] mt-2">
+                      ⭐ {reward.cost} נקודות
+                    </div>
+                  </div>
+
+                  {/* Child selection */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium mb-3">
+                      בחר ילדים למימוש:
+                    </label>
+                    <div className="space-y-2">
+                      {children?.map((child) => (
+                        <button
+                          key={child._id}
+                          onClick={() => toggleRedeemChild(child._id)}
+                          className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
+                            redeemChildIds.includes(child._id)
+                              ? "border-[#a29bfe] bg-purple-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{child.avatar}</span>
+                            <span className="font-medium">{child.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-sm ${
+                              child.totalPoints >= reward.cost
+                                ? "text-green-600"
+                                : "text-red-500"
+                            }`}>
+                              ⭐ {child.totalPoints}
+                            </span>
+                            {redeemChildIds.includes(child._id) && (
+                              <span className="text-[#a29bfe] text-xl">✓</span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowRedeemModal(false)}
+                      className="flex-1 py-3 rounded-xl border border-gray-200 font-medium hover:bg-gray-50"
+                    >
+                      ביטול
+                    </button>
+                    <button
+                      onClick={handleParentRedeem}
+                      disabled={redeemChildIds.length === 0 || redeemLoading}
+                      className="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold hover:bg-green-600 transition-colors disabled:opacity-50"
+                    >
+                      {redeemLoading ? (
+                        <span className="animate-spin inline-block">⏳</span>
+                      ) : (
+                        `ממש ל-${redeemChildIds.length || "..."} ילדים 🎁`
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -340,6 +340,84 @@ export const redeem = mutation({
   },
 });
 
+// Parent-initiated reward redemption (parent chooses reward + children, deducts points, sends notification)
+export const parentRedeem = mutation({
+  args: {
+    rewardId: v.id("rewards"),
+    childIds: v.array(v.id("children")),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const reward = await ctx.db.get(args.rewardId);
+    if (!reward) {
+      throw new Error("Reward not found");
+    }
+
+    const results: { childId: string; childName: string; success: boolean; error?: string }[] = [];
+
+    for (const childId of args.childIds) {
+      const child = await ctx.db.get(childId);
+      if (!child) {
+        results.push({ childId, childName: "?", success: false, error: "ילד לא נמצא" });
+        continue;
+      }
+
+      if (child.totalPoints < reward.cost) {
+        results.push({
+          childId,
+          childName: child.name,
+          success: false,
+          error: `אין מספיק נקודות (${child.totalPoints}/${reward.cost})`,
+        });
+        continue;
+      }
+
+      // Deduct points
+      await ctx.db.patch(childId, {
+        totalPoints: child.totalPoints - reward.cost,
+      });
+
+      // Create purchase record
+      const purchaseId = await ctx.db.insert("purchases", {
+        childId,
+        rewardId: args.rewardId,
+        cost: reward.cost,
+        purchasedAt: Date.now(),
+        isRedeemed: true,
+        redeemedAt: Date.now(),
+      });
+
+      // Create notification for the child
+      await ctx.db.insert("notifications", {
+        childId,
+        type: "reward_available",
+        title: "הורה מימש פרס! 🎁",
+        message: `${reward.icon} ${reward.name} מומש עבורך! הורדו ${reward.cost} נקודות.`,
+        relatedId: purchaseId,
+        isRead: false,
+        createdAt: Date.now(),
+      });
+
+      results.push({ childId, childName: child.name, success: true });
+    }
+
+    return results;
+  },
+});
+
 // NOTE: Public initializeDefaultRewards was removed as dead code.
 // Use the internal version (initializeDefaultRewardsInternal) which is called
 // from users.createUser and users.ensureUser via ctx.scheduler.
