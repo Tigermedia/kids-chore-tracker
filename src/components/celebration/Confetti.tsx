@@ -83,7 +83,7 @@ export function Confetti({ show, onComplete }: ConfettiProps) {
 
       {/* Success message */}
       <div
-        className="absolute bottom-1/3 left-1/2 transform -translate-x-1/2"
+        className="absolute inset-x-0 bottom-1/3 flex justify-center"
         style={{ animation: "slideUp 0.5s ease-out 0.2s both" }}
       >
         <div className="bg-white/90 backdrop-blur-sm px-8 py-4 rounded-2xl shadow-xl">
