@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-02-12
+
+### Added
+
+- **Parent Reward Redemption (מימוש פרס לילד)**: Parents can now redeem rewards for children proactively
+  - New "🎁 ממש לילד" button on each reward card in the parent rewards page
+  - Modal lets parent select one or multiple children at once
+  - Shows each child's current point balance with color-coded sufficiency indicator
+  - Deducts points per child, creates purchase record (auto-marked as redeemed), sends in-app notification
+  - Handles insufficient points gracefully per child with clear error messages
+
+### Fixed
+
+- **"כל הכבוד" celebration message** now properly centered on mobile (was offset to the left in RTL layout)
+- **Convex deployment sync** - redeployed functions to correct production deployment (`befitting-crane-482`)
+- **Convex URL mismatch** - both `NEXT_PUBLIC_CONVEX_URL` and `CONVEX_DEPLOYMENT` now correctly point to `befitting-crane-482.convex.cloud`
+
+## [1.5.0] - 2026-02-06
+
+### Added
+
+- **Parent Add Points (הוספת נקודות)**: New `/parent/add-points` page for bonus points
+- **Audio Notifications**: TTS notifications for point changes
+- **40+ Achievements**: Expanded from 17 to 40+ unlockable achievements
+- **"הוספת נקודות" in navigation menu**: Added to parent top nav bar
+
+### Fixed
+
+- Bug: `patch` called inside Convex query (not mutation) in `tasks.ts`
+- Removed 100-point cap on point inputs
+- Added task frequency option for special tasks (once/daily/weekly/monthly)
+
 ## [1.4.0] - 2026-02-03
 
 ### Added
